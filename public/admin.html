@@ -1,0 +1,197 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>IMPERIAL RADIO — Admin</title>
+  <link rel="icon" type="image/png" href="/assets/logo_hex.png" />
+  <link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body class="admin">
+  <div class="topbar">
+    <div class="wrap topbar-inner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>IMPERIAL RADIO</h1>
+          <div class="sub">ADMIN PANEL</div>
+        </div>
+      </div>
+      <div class="status" title="Статус">
+        <span class="dot"></span>
+        <span>ADMIN</span>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <div class="admin-wrap">
+      <div class="admin-card">
+        <h1 class="admin-title">Загрузка файлов</h1>
+        <div class="admin-muted">Музыка: <code>/radio/music</code> • Джинглы: <code>/radio/jingles</code></div>
+        <div id="msg" class="admin-msg admin-muted" style="margin-top:10px"></div>
+      </div>
+
+      <div class="admin-card admin-row">
+        <h1 class="admin-title">Загрузить трек</h1>
+        <div class="admin-muted">Поддерживается: mp3, wav, ogg, flac</div>
+        <form method="post" action="/api/admin/upload/music" enctype="multipart/form-data">
+          <label class="admin-label" for="artistInput">Имя артиста</label>
+          <input class="admin-input" type="text" id="artistInput" name="artist" list="artistList" placeholder="Например: The Prodigy" autocomplete="off" />
+          <datalist id="artistList"></datalist>
+          <label class="admin-label" for="titleInput">Название трека</label>
+          <input class="admin-input" type="text" id="titleInput" name="title" placeholder="Например: Firestarter" autocomplete="off" />
+          <label class="admin-label">Файл</label>
+          <input class="admin-input" type="file" name="file" accept=".mp3,.wav,.ogg,.flac" required />
+          <button class="btn" type="submit">Загрузить в музыку</button>
+        </form>
+      </div>
+
+      <div class="admin-card admin-row">
+        <h1 class="admin-title">Загрузить джингл</h1>
+        <div class="admin-muted">Поддерживается: mp3, wav, ogg, flac</div>
+        <form method="post" action="/api/admin/upload/jingle" enctype="multipart/form-data">
+          <label class="admin-label">Файл</label>
+          <input class="admin-input" type="file" name="file" accept=".mp3,.wav,.ogg,.flac" required />
+          <button class="btn" type="submit">Загрузить в джинглы</button>
+        </form>
+      </div>
+
+      <div class="admin-card">
+        <h1 class="admin-title">Библиотека треков</h1>
+        <div class="admin-muted">Поиск по названию или файлу</div>
+        <div class="admin-controls">
+          <input class="admin-input" id="songSearch" type="text" placeholder="Поиск..." autocomplete="off" />
+          <button class="btn" id="refreshBtn" type="button">Обновить</button>
+        </div>
+        <div id="songList" class="admin-list"></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const q = new URLSearchParams(location.search);
+    const ok = q.get("ok");
+    const err = q.get("err");
+    const msg = document.getElementById("msg");
+    if (ok) { msg.textContent = "Готово: файл загружен."; msg.className = "admin-msg ok"; }
+    else if (err) { msg.textContent = "Ошибка: " + err; msg.className = "admin-msg err"; }
+    else { msg.textContent = " "; }
+
+    const artistInput = document.getElementById("artistInput");
+    const artistList = document.getElementById("artistList");
+    const form = artistInput?.closest("form");
+    const songList = document.getElementById("songList");
+    const songSearch = document.getElementById("songSearch");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const STORAGE_KEY = "admin_artists";
+
+    function readArtists() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const list = raw ? JSON.parse(raw) : [];
+        return Array.isArray(list) ? list.filter((x) => typeof x === "string") : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function writeArtists(list) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      } catch {}
+    }
+
+    function renderArtistList() {
+      const list = readArtists();
+      artistList.innerHTML = list.map((a) => `<option value="${a}"></option>`).join("");
+    }
+
+    if (artistList) renderArtistList();
+
+    form?.addEventListener("submit", () => {
+      const name = (artistInput?.value || "").trim();
+      if (!name) return;
+      const list = readArtists();
+      if (!list.includes(name)) {
+        list.unshift(name);
+        if (list.length > 50) list.pop();
+        writeArtists(list);
+        renderArtistList();
+      }
+    });
+
+    let searchTimer = null;
+
+    async function loadSongs() {
+      const qv = (songSearch?.value || "").trim();
+      const url = qv ? `/api/admin/music?q=${encodeURIComponent(qv)}` : "/api/admin/music";
+      songList.textContent = "Загрузка...";
+      try {
+        const r = await fetch(url, { cache: "no-store" });
+        const j = await r.json();
+        const items = Array.isArray(j.items) ? j.items : [];
+        if (!items.length) {
+          songList.textContent = "Ничего не найдено.";
+          return;
+        }
+        songList.innerHTML = items.map((it) => `
+          <div class="admin-item">
+            <div class="admin-item-title">${it.title}</div>
+            <div class="admin-item-meta">${it.file}</div>
+            <div class="admin-item-actions">
+              <button class="btn small" data-action="next" data-file="${it.file}">Включить следующей</button>
+              <button class="btn small" data-action="queue" data-file="${it.file}">Добавить в очередь</button>
+              <button class="btn small danger" data-action="delete" data-file="${it.file}">Удалить</button>
+            </div>
+          </div>
+        `).join("");
+      } catch {
+        songList.textContent = "Ошибка загрузки.";
+      }
+    }
+
+    async function action(file, action) {
+      if (!file) return;
+      try {
+        if (action === "delete") {
+          if (!confirm("Удалить трек навсегда?")) return;
+          const r = await fetch(`/api/admin/music?file=${encodeURIComponent(file)}`, { method: "DELETE" });
+          if (!r.ok) throw new Error();
+          await loadSongs();
+          msg.textContent = "Трек удалён.";
+          msg.className = "admin-msg ok";
+          return;
+        }
+        const endpoint = action === "next" ? "/api/admin/queue/next" : "/api/admin/queue/add";
+        const r = await fetch(endpoint, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ file })
+        });
+        if (!r.ok) throw new Error();
+        msg.textContent = action === "next" ? "Трек будет следующим." : "Трек добавлен в очередь.";
+        msg.className = "admin-msg ok";
+      } catch {
+        msg.textContent = "Ошибка операции.";
+        msg.className = "admin-msg err";
+      }
+    }
+
+    songList?.addEventListener("click", (e) => {
+      const btn = e.target?.closest?.("button");
+      if (!btn) return;
+      action(btn.dataset.file, btn.dataset.action);
+    });
+
+    songSearch?.addEventListener("input", () => {
+      if (searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(loadSongs, 250);
+    });
+
+    refreshBtn?.addEventListener("click", loadSongs);
+
+    loadSongs();
+  </script>
+</body>
+</html>

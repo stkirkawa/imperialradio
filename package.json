@@ -1,0 +1,26 @@
+{
+  "name": "imperial-radio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fastify/multipart": "^8.0.0",
+    "@fastify/static": "^7.0.0",
+    "dotenv": "^16.4.5",
+    "fastify": "^4.27.0",
+    "undici": "^6.19.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}

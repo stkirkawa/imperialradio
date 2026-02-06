@@ -1,0 +1,266 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#0b0b0b" />
+  <title>IMPERIAL RADIO</title>
+  <link rel="icon" type="image/png" href="/assets/logo_hex.png" />
+  <link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="wrap topbar-inner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>IMPERIAL RADIO</h1>
+          <div class="sub">СУПЕРХИТЫ • 24/7 • LIVE</div>
+        </div>
+      </div>
+      <div class="status" title="Статус эфира">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">НЕ ИГРАЕТ</span>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="panel">
+          <div class="hero-title">
+            <h2>IMPERIAL<br/>RADIO</h2>
+            <div class="live">LIVE</div>
+          </div>
+          <div class="desc">Ритм. Власть. Музыка. IMPERIAL RADIO</div>
+
+          <div class="nowbox">
+            <div class="nowlabel">СЕЙЧАС ИГРАЕТ</div>
+            <div class="nowrow">
+              <div class="art" aria-hidden="true"></div>
+              <div class="nowtext">
+                <div class="nowtitle" id="nowTitle">—</div>
+                <div class="nowmeta">
+                  <span>СЛУШАТЕЛЕЙ: <strong id="listeners">0</strong></span>
+                  <span>ОБНОВЛЕНО: <span id="updated">—</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="controls">
+            <button class="btn primary" id="playBtn">▶ ИГРАТЬ</button>
+            <button class="btn" id="muteBtn">БЕЗ ЗВУКА</button>
+            <div class="slider">
+              <span>VOL</span>
+              <input id="vol" type="range" min="0" max="1" step="0.01" value="0.9" />
+            </div>
+            <button class="btn" id="shareBtn">ПОДЕЛИТЬСЯ</button>
+            <button class="btn" id="copyBtn">КОПИРОВАТЬ ССЫЛКУ</button>
+            <button class="btn" id="copyTrackBtn">СКОПИРОВАТЬ НАЗВАНИЕ</button>
+            <button class="btn" id="suggestBtn">ПРЕДЛОЖИТЬ ТРЕК</button>
+          </div>
+
+
+          <audio id="player" preload="none" crossorigin="anonymous">
+            <source src="/stream" type="audio/mpeg" />
+          </audio>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <h3>ИСТОРИЯ ЭФИРА</h3>
+        <div class="history" id="history"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      © <span id="year"></span> IMPERIAL RADIO • Некоммерческий онлайн‑проект • Контент используется с соблюдением прав и лицензий • <a href="/policy">Политика</a>
+    </div>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const NOWPLAYING_URL = "/api/nowplaying";
+    const POLL_MS = 7000;
+    const HISTORY_MAX = 12;
+
+    const nowTitleEl = document.getElementById("nowTitle");
+    const listenersEl = document.getElementById("listeners");
+    const updatedEl = document.getElementById("updated");
+    const statusDot = document.getElementById("statusDot");
+    const statusText = document.getElementById("statusText");
+
+    const player = document.getElementById("player");
+    const playBtn = document.getElementById("playBtn");
+    const muteBtn = document.getElementById("muteBtn");
+    const vol = document.getElementById("vol");
+    const shareBtn = document.getElementById("shareBtn");
+    const copyBtn = document.getElementById("copyBtn");
+    const copyTrackBtn = document.getElementById("copyTrackBtn");
+    const suggestBtn = document.getElementById("suggestBtn");
+    const toastEl = document.getElementById("toast");
+
+    const historyEl = document.getElementById("history");
+    const history = [];
+
+    document.getElementById("year").textContent = new Date().getFullYear();
+    renderHistory();
+    player.volume = Number(vol.value);
+    let isPlaying = false;
+    let lastVolume = Number(vol.value) || 0.9;
+
+    function setStatus(state) {
+      const map = {
+        playing: { t: "В ЭФИРЕ", dot: "var(--accent2)", glow: "rgba(255,138,0,.2)" },
+        paused:  { t: "ПАУЗА",   dot: "var(--warn)", glow: "rgba(255,204,0,.12)" },
+        loading: { t: "ЗАГРУЗКА", dot: "var(--warn)", glow: "rgba(255,204,0,.12)" },
+        error:   { t: "ОШИБКА",  dot: "var(--danger)", glow: "rgba(255,77,79,.14)" }
+      };
+      const s = map[state] || map.paused;
+      statusText.textContent = s.t;
+      statusDot.style.background = s.dot;
+      statusDot.style.boxShadow = `0 0 0 6px ${s.glow}`;
+    }
+
+    function formatTime(d) {
+      const hh = String(d.getHours()).padStart(2,"0");
+      const mm = String(d.getMinutes()).padStart(2,"0");
+      return `${hh}:${mm}`;
+    }
+
+    function showToast(msg) {
+      if (!toastEl) return;
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toastEl.classList.remove("show"), 1800);
+    }
+
+    function renderHistory() {
+      historyEl.innerHTML = history.map(h => `
+        <div class="item"><div class="tline"><div class="art" aria-hidden="true"></div><strong>${h.title}</strong></div><span>${h.time}</span></div>
+      `).join("");
+    }
+
+    function pushHistory(title) {
+      const time = formatTime(new Date());
+      if (history[0]?.title === title) return;
+      history.unshift({ title, time });
+      if (history.length > HISTORY_MAX) history.pop();
+      renderHistory();
+    }
+
+    async function refreshNowPlaying() {
+      try {
+        const r = await fetch(NOWPLAYING_URL, { cache: "no-store" });
+        const j = await r.json();
+        const title = (j.title && j.title.trim()) ? j.title : "—";
+        nowTitleEl.textContent = title;
+        listenersEl.textContent = (j.listeners ?? 0);
+        updatedEl.textContent = formatTime(new Date());
+        pushHistory(title);
+      } catch {}
+    }
+
+    async function play() {
+      setStatus("loading");
+      try {
+        player.load();
+        await player.play();
+        isPlaying = true;
+        playBtn.textContent = "⏸ ПАУЗА";
+        setStatus("playing");
+      } catch {
+        setStatus("error");
+      }
+    }
+
+    function pause() {
+      player.pause();
+      isPlaying = false;
+      playBtn.textContent = "▶ ИГРАТЬ";
+      setStatus("paused");
+    }
+
+    playBtn.addEventListener("click", () => { if (!isPlaying) play(); else pause(); });
+        muteBtn.addEventListener("click", () => {
+      if (!player.muted) {
+        lastVolume = player.volume || Number(vol.value) || 0.9;
+        player.muted = true;
+        player.volume = 0;
+        vol.value = "0";
+        muteBtn.textContent = "БЕЗ ЗВУКА";
+      } else {
+        player.muted = false;
+        player.volume = lastVolume || 0.9;
+        vol.value = String(player.volume);
+        muteBtn.textContent = "СО ЗВУКОМ";
+      }
+    });
+        vol.addEventListener("input", () => {
+      player.volume = Number(vol.value);
+      if (player.volume > 0) {
+        player.muted = false;
+        muteBtn.textContent = "СО ЗВУКОМ";
+        lastVolume = player.volume;
+      } else {
+        player.muted = true;
+        muteBtn.textContent = "БЕЗ ЗВУКА";
+      }
+    });
+
+    player.addEventListener("playing", () => setStatus("playing"));
+    player.addEventListener("pause", () => { if (!player.ended) setStatus("paused"); });
+    player.addEventListener("waiting", () => setStatus("loading"));
+    player.addEventListener("error", () => setStatus("error"));
+
+    shareBtn.addEventListener("click", async () => {
+      const url = location.href;
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: "IMPERIAL RADIO", text: "Слушай радио онлайн", url });
+        } else {
+          await navigator.clipboard.writeText(url);
+          showToast("Ссылка скопирована");
+        }
+      } catch {}
+    });
+
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(location.href);
+        showToast("Ссылка скопирована");
+      } catch {}
+    });
+
+    copyTrackBtn.addEventListener("click", async () => {
+      const title = nowTitleEl.textContent?.trim() || "";
+      if (!title || title === "—") {
+        showToast("Нет трека");
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(title);
+        showToast("Название скопировано");
+      } catch {
+        showToast("Не удалось скопировать");
+      }
+    });
+
+    suggestBtn.addEventListener("click", () => {
+      showToast("Скоро: форма предложений");
+    });
+
+    setStatus("paused");
+    refreshNowPlaying();
+    setInterval(refreshNowPlaying, POLL_MS);
+  </script>
+</body>
+</html>
