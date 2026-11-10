@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Вход — SANTA MARIA RADIO</title>
+  <link rel="icon" type="image/png" href="/assets/logo.png" />
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/workspace.css" />
+</head>
+<body class="admin login-page">
+  <main>
+    <div class="admin-wrap">
+      <section class="admin-card">
+        <h1 class="admin-title">Вход в SANTA MARIA RADIO</h1>
+        <form id="loginForm">
+          <label class="admin-label" for="username">Логин</label>
+          <input class="admin-input" id="username" name="username" autocomplete="username" required />
+          <label class="admin-label" for="password">Пароль</label>
+          <input class="admin-input" id="password" name="password" type="password" autocomplete="current-password" required />
+          <button class="btn" type="submit">Войти</button>
+        </form>
+        <p id="message" class="admin-msg admin-muted" role="status"></p>
+      </section>
+    </div>
+  </main>
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const message = document.getElementById("message");
+      const form = new FormData(event.currentTarget);
+      message.textContent = "Проверка данных...";
+      try {
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ username: form.get("username"), password: form.get("password") })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error === "too_many_attempts" ? "Слишком много попыток. Попробуйте позже." : "Неверный логин или пароль.");
+        location.assign(result.redirect);
+      } catch (error) {
+        message.textContent = error.message || "Не удалось выполнить вход.";
+        message.className = "admin-msg err";
+      }
+    });
+  </script>
+</body>
+</html>

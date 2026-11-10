@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DJ — SANTA MARIA RADIO</title>
+  <link rel="icon" type="image/png" href="/assets/logo.png" />
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/workspace.css?v=dj-library-filters-20261110" />
+</head>
+<body class="admin">
+  <div class="workspace-shell">
+    <aside class="workspace-sidebar" id="workspaceSidebar">
+      <a class="workspace-brand" href="/dj/studio">
+        <img src="/assets/logo.png" alt="" />
+        <span class="workspace-brand-name"><img src="/assets/santamariaradio_text.png" alt="SANTA MARIA RADIO" /><small>DJ STUDIO</small></span>
+      </a>
+      <div class="sidebar-caption">Моя студия</div>
+      <nav class="workspace-nav" aria-label="Меню DJ">
+        <a href="/dj/studio" data-page="studio"><span class="nav-icon">◉</span><span>Студия</span></a>
+        <a href="/dj/queue" data-page="queue"><span class="nav-icon">≡</span><span>Очередь эфира</span></a>
+        <a href="/dj/playlists" data-page="playlists"><span class="nav-icon">♫</span><span>Мои плейлисты</span></a>
+        <a href="/dj/library" data-page="library"><span class="nav-icon">▤</span><span>Библиотека</span></a>
+        <a href="/dj/upload" data-page="upload"><span class="nav-icon">＋</span><span>Загрузка музыки</span></a>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <a class="sidebar-public-link" href="/" target="_blank" rel="noreferrer">Открыть радио <span>↗</span></a>
+      <div class="sidebar-account">
+        <span class="account-avatar">DJ</span>
+        <span class="account-name" id="djName">Диджей<small>DJ эфир</small></span>
+        <button class="icon-button" id="logoutBtn" type="button" aria-label="Выйти" title="Выйти">↗</button>
+      </div>
+    </aside>
+    <button class="sidebar-overlay" id="sidebarOverlay" type="button" aria-label="Закрыть меню" hidden></button>
+
+    <main class="workspace-main">
+      <header class="workspace-topbar">
+        <button class="mobile-menu-button" id="mobileMenuBtn" type="button" aria-label="Открыть меню"><span></span><span></span><span></span></button>
+        <div class="breadcrumbs">SANTA MARIA RADIO <span>/</span> <strong id="pageBreadcrumb">Студия</strong></div>
+        <div class="workspace-topbar-right"><span class="live-pill" id="topOnAirStatus"><i></i> Проверяем эфир</span></div>
+      </header>
+      <div class="workspace-content">
+        <div class="workspace-heading">
+          <div>
+            <div class="eyebrow">DJ WORKSPACE</div>
+            <h1 id="pageTitle">Студия</h1>
+            <p id="pageDescription">Управляйте эфиром, микрофоном и уровнем звука.</p>
+          </div>
+          <div class="heading-mark"><img src="/assets/logo.png" alt="" /></div>
+        </div>
+        <div id="message" class="workspace-notice admin-msg admin-muted" role="status"></div>
+        <div class="workspace-pages" id="workspacePages">
+      <section class="workspace-page" data-page="studio">
+      <section class="admin-card">
+        <h1 class="admin-title">Эфир</h1>
+        <div id="onAirStatus" class="admin-muted">Загрузка...</div>
+        <div class="admin-controls">
+          <select id="sourceMode" class="admin-input">
+            <option value="playlist">Плейлист</option>
+            <option value="rtmp">Внешний источник (OBS / RTMP)</option>
+            <option value="icecast">Внешний источник (BUTT / Icecast)</option>
+          </select>
+          <select id="playlistSelect" class="admin-input"></select>
+          <button class="btn" id="liveBtn" type="button" hidden disabled>Войти в эфир</button>
+        </div>
+        <div class="admin-controls" id="studioControls" hidden>
+          <button class="btn" id="microphoneBtn" type="button">Включить микрофон</button>
+          <label class="admin-label" for="volumeSlider">Громкость эфира: <span id="volumeValue">100%</span></label>
+          <input class="admin-input" id="volumeSlider" type="range" min="0" max="100" step="1" value="100" />
+        </div>
+        <div id="broadcastInfo" class="admin-muted" hidden></div>
+        <button class="btn small" id="renewCredentials" type="button" hidden>Обновить данные подключения</button>
+      </section>
+
+      </section>
+
+      <section class="workspace-page" data-page="queue" hidden>
+      <section class="admin-card" id="queueCard" hidden>
+        <h1 class="admin-title">Очередь эфира</h1>
+        <div class="admin-muted">Следующие треки. Текущий трек продолжит играть при изменении порядка.</div>
+        <div id="djQueueList" class="admin-list"></div>
+      </section>
+      <section class="admin-card" id="queueUnavailable" hidden>
+        <h1 class="admin-title">Очередь недоступна</h1>
+        <p class="admin-muted">Очередь видна владельцу активного плейлистного эфира.</p>
+        <a class="btn" href="/dj/studio">Перейти в студию</a>
+      </section>
+      </section>
+
+      <section class="workspace-page" data-page="playlists" hidden>
+      <section class="admin-card">
+        <h1 class="admin-title">Мои плейлисты</h1>
+        <form id="playlistForm" class="admin-controls">
+          <input class="admin-input" id="playlistName" maxlength="64" required placeholder="Название нового плейлиста" />
+          <button class="btn" type="submit">Создать</button>
+        </form>
+        <div id="playlistTracks" class="admin-list"></div>
+      </section>
+      </section>
+
+      <section class="workspace-page" data-page="library" hidden>
+      <section class="admin-card library-card">
+        <div class="library-header">
+          <div>
+            <h2 class="admin-title">Общая библиотека</h2>
+            <p class="admin-muted">Ищите музыку и добавляйте треки в плейлисты или очередь эфира.</p>
+          </div>
+          <button class="btn" id="refreshMusic" type="button">Обновить</button>
+        </div>
+        <div class="library-toolbar">
+          <label class="library-field library-search" for="musicSearch">
+            <span>Поиск</span>
+            <input class="admin-input" id="musicSearch" type="search" placeholder="Название или имя файла" autocomplete="off" />
+          </label>
+          <label class="library-field" for="musicFormat">
+            <span>Формат</span>
+            <select class="admin-input" id="musicFormat">
+              <option value="all">Все форматы</option>
+              <option value="mp3">MP3</option>
+              <option value="flac">FLAC</option>
+              <option value="wav">WAV</option>
+              <option value="ogg">OGG</option>
+            </select>
+          </label>
+          <label class="library-field" for="musicSort">
+            <span>Сортировка</span>
+            <select class="admin-input" id="musicSort">
+              <option value="date">По дате загрузки</option>
+              <option value="name">По названию</option>
+              <option value="size">По размеру</option>
+            </select>
+          </label>
+          <label class="library-field" for="musicOrder">
+            <span>Порядок</span>
+            <select class="admin-input" id="musicOrder">
+              <option value="desc">По убыванию</option>
+              <option value="asc">По возрастанию</option>
+            </select>
+          </label>
+          <label class="library-field" for="musicPageSize">
+            <span>На странице</span>
+            <select class="admin-input" id="musicPageSize">
+              <option value="25">25</option>
+              <option value="50" selected>50</option>
+              <option value="100">100</option>
+            </select>
+          </label>
+        </div>
+        <div class="library-summary">
+          <span id="musicSummary" role="status" aria-live="polite">Загрузка библиотеки...</span>
+          <span id="musicPageInfo"></span>
+        </div>
+        <div id="musicList" class="admin-list library-list" aria-live="polite"></div>
+        <nav class="library-pagination" aria-label="Страницы библиотеки">
+          <button class="btn small" id="musicPrev" type="button" disabled>← Назад</button>
+          <button class="btn small" id="musicNext" type="button" disabled>Далее →</button>
+        </nav>
+      </section>
+      </section>
+
+      <section class="workspace-page" data-page="upload" hidden>
+      <section class="admin-card">
+        <h2 class="admin-title">Загрузка музыки</h2>
+        <p class="admin-muted">Загруженные треки появятся в общей библиотеке и будут доступны для плейлистов и эфира.</p>
+        <form id="uploadForm" class="music-upload-form">
+          <label class="admin-label" for="artist">Артист (необязательно)</label>
+          <input class="admin-input" id="artist" name="artist" maxlength="100" autocomplete="off" placeholder="Например: The Prodigy" />
+          <label class="admin-label" for="title">Название трека (необязательно)</label>
+          <input class="admin-input" id="title" name="title" maxlength="100" autocomplete="off" placeholder="Например: Firestarter" />
+          <label class="admin-label" for="musicFile">Аудиофайл</label>
+          <input class="admin-input" id="musicFile" name="file" type="file" accept=".mp3,.wav,.ogg,.flac,audio/mpeg,audio/wav,audio/ogg,audio/flac" required />
+          <div class="admin-muted">Форматы MP3, WAV, OGG, FLAC.</div>
+          <button class="btn" type="submit">Загрузить в общую библиотеку</button>
+        </form>
+      </section>
+      </section>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script>
+    const pageNames = {
+      studio: { title: "Студия", description: "Управляйте эфиром, микрофоном и уровнем звука." },
+      queue: { title: "Очередь эфира", description: "Настраивайте порядок следующих треков." },
+      playlists: { title: "Мои плейлисты", description: "Собирайте и храните свои музыкальные подборки." },
+      library: { title: "Библиотека", description: "Находите треки, добавляйте их в плейлисты или очередь эфира." },
+      upload: { title: "Загрузка музыки", description: "Добавляйте новые треки в общую музыкальную библиотеку." }
+    };
+    const requestedPage = location.pathname.split("/").filter(Boolean).pop();
+    const currentPage = pageNames[requestedPage] ? requestedPage : "studio";
+    document.querySelectorAll(".workspace-page").forEach((page) => {
+      page.hidden = page.dataset.page !== currentPage;
+    });
+    document.querySelectorAll(".workspace-nav a").forEach((link) => {
+      if (link.dataset.page === currentPage) link.setAttribute("aria-current", "page");
+    });
+    document.getElementById("pageTitle").textContent = pageNames[currentPage].title;
+    document.getElementById("pageBreadcrumb").textContent = pageNames[currentPage].title;
+    document.getElementById("pageDescription").textContent = pageNames[currentPage].description;
+
+    const sidebar = document.getElementById("workspaceSidebar");
+    const sidebarOverlay = document.getElementById("sidebarOverlay");
+    function closeSidebar() {
+      sidebar.classList.remove("is-open");
+      sidebarOverlay.hidden = true;
+    }
+    document.getElementById("mobileMenuBtn").addEventListener("click", () => {
+      sidebar.classList.add("is-open");
+      sidebarOverlay.hidden = false;
+    });
+    sidebarOverlay.addEventListener("click", closeSidebar);
+
+    const playlistSelect = document.getElementById("playlistSelect");
+    const playlistTracks = document.getElementById("playlistTracks");
+    const musicList = document.getElementById("musicList");
+    const musicSearch = document.getElementById("musicSearch");
+    const refreshMusic = document.getElementById("refreshMusic");
+    const musicFormat = document.getElementById("musicFormat");
+    const musicSort = document.getElementById("musicSort");
+    const musicOrder = document.getElementById("musicOrder");
+    const musicPageSize = document.getElementById("musicPageSize");
+    const musicSummary = document.getElementById("musicSummary");
+    const musicPageInfo = document.getElementById("musicPageInfo");
+    const musicPrev = document.getElementById("musicPrev");
+    const musicNext = document.getElementById("musicNext");
+    const message = document.getElementById("message");
+    let playlists = [];
+    let onAir = false;
+    let liveState = null;
+    let isOwner = false;
+    let statusLoaded = false;
+    let liveActionPending = false;
+    let statusRequestInFlight = false;
+    let currentSourceMode = "playlist";
+    let microphoneStream = null;
+    let microphonePeer = null;
+    let whipSessionUrl = null;
+    let lastStatusKey = "";
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      })[char]);
+    }
+
+    async function api(url, options = {}) {
+      const response = await fetch(url, { cache: "no-store", ...options });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Ошибка запроса");
+      return data;
+    }
+
+    function notify(text, isError = false) {
+      message.textContent = text;
+      message.className = isError ? "admin-msg err" : "admin-msg ok";
+    }
+
+    function updateLiveControls() {
+      const liveButton = document.getElementById("liveBtn");
+      liveButton.hidden = !statusLoaded || (onAir && !isOwner);
+      liveButton.disabled = !statusLoaded || liveActionPending;
+      liveButton.textContent = liveActionPending
+        ? "Подождите..."
+        : isOwner ? "Выйти из эфира (закончить)" : "Войти в эфир";
+      liveButton.classList.toggle("danger", isOwner);
+      document.getElementById("sourceMode").disabled = !statusLoaded || onAir || liveActionPending;
+      document.getElementById("playlistSelect").disabled = !statusLoaded || onAir || liveActionPending;
+      const playlistStudio = isOwner && currentSourceMode === "playlist";
+      document.getElementById("studioControls").hidden = !playlistStudio;
+      document.getElementById("queueCard").hidden = !playlistStudio;
+      document.getElementById("queueUnavailable").hidden = playlistStudio;
+      const microphoneButton = document.getElementById("microphoneBtn");
+      microphoneButton.disabled = liveActionPending;
+      microphoneButton.textContent = liveState?.microphoneEnabled
+        ? microphoneStream ? "Выключить микрофон" : "Переподключить микрофон"
+        : "Включить микрофон";
+      const volumeSlider = document.getElementById("volumeSlider");
+      volumeSlider.disabled = liveActionPending;
+      if (document.activeElement !== volumeSlider && liveState) {
+        volumeSlider.value = liveState.volume;
+        document.getElementById("volumeValue").textContent = `${liveState.volume}%`;
+      }
+    }
+
+    async function loadIdentity() {
+      const { user } = await api("/api/dj/me");
+      document.getElementById("djName").textContent = user.displayName;
+    }
+
+    async function loadStatus() {
+      if (statusRequestInFlight) return;
+      statusRequestInFlight = true;
+      let live;
+      let ownsSlot;
+      try {
+        ({ onAir: live, isOwner: ownsSlot } = await api("/api/dj/on-air"));
+      } catch (error) {
+        statusLoaded = false;
+        document.getElementById("onAirStatus").textContent = "Не удалось загрузить статус эфира.";
+        updateLiveControls();
+        throw error;
+      } finally {
+        statusRequestInFlight = false;
+      }
+      const statusKey = `${live?.djId || ""}:${live?.sourceMode || ""}`;
+      onAir = Boolean(live);
+      liveState = live;
+      isOwner = ownsSlot;
+      statusLoaded = true;
+      currentSourceMode = live?.sourceMode || "playlist";
+      document.getElementById("onAirStatus").textContent = live
+        ? `В эфире - DJ (${live.djDisplayName})${ownsSlot ? " — вы" : ""}`
+        : "В эфире";
+      const topStatus = document.getElementById("topOnAirStatus");
+      topStatus.innerHTML = live
+        ? `<i></i> В эфире · ${escapeHtml(live.djDisplayName)}`
+        : "<i></i> AutoDJ";
+      topStatus.classList.toggle("is-live", Boolean(live));
+      updateLiveControls();
+      document.getElementById("renewCredentials").hidden = !isOwner || currentSourceMode === "playlist";
+      document.getElementById("broadcastInfo").hidden = !isOwner || currentSourceMode === "playlist";
+      if (lastStatusKey !== statusKey) {
+        lastStatusKey = statusKey;
+        if (isOwner && currentSourceMode === "microphone") {
+          document.getElementById("broadcastInfo").textContent = "Микрофонный эфир активен. Если источник отключился, нажмите «Обновить данные подключения».";
+        } else if (isOwner && currentSourceMode === "icecast") {
+          document.getElementById("broadcastInfo").textContent = "Внешний Icecast-источник активен. Если он отключился, обновите данные подключения.";
+        }
+        await loadMusic();
+      }
+      if (isOwner && currentSourceMode === "playlist") await loadQueue();
+    }
+
+    function renderBroadcastInfo(broadcast) {
+      const panel = document.getElementById("broadcastInfo");
+      panel.hidden = false;
+      document.getElementById("renewCredentials").hidden = false;
+      if (currentSourceMode === "microphone") {
+        panel.textContent = "Микрофон подключается через браузер. Не закрывайте эту страницу, пока ведёте эфир.";
+        return;
+      }
+
+      if (currentSourceMode === "icecast") {
+        const icecast = new URL(broadcast.icecastUrl);
+        panel.innerHTML = `
+          <strong>BUTT → Server Settings</strong>
+          <div>Server type: Icecast</div>
+          <div>Address: <code>${escapeHtml(icecast.hostname)}</code></div>
+          <div>Port: <code>${escapeHtml(icecast.port || (icecast.protocol === "https:" ? "443" : "80"))}</code></div>
+          <div>Mountpoint: <code>${escapeHtml(icecast.pathname)}</code></div>
+          <div>Username: <code>source</code></div>
+          <div>Password: <code>${escapeHtml(broadcast.password)}</code></div>
+          <div>Set the stream format to MP3. Keep this key private.</div>
+        `;
+        return;
+      }
+
+      const rtmp = new URL(broadcast.rtmpUrl);
+      const server = `${rtmp.protocol}//${rtmp.host}/`;
+      const streamKey = `${rtmp.pathname.replace(/^\/+|\/+$/g, "")}?user=${encodeURIComponent(broadcast.username)}&pass=${encodeURIComponent(broadcast.password)}`;
+      panel.innerHTML = `
+        <strong>OBS → Настройки → Трансляция</strong>
+        <div>Сервис: Настраиваемый</div>
+        <div>Сервер: <code>${escapeHtml(server)}</code></div>
+        <div>Ключ: <code>${escapeHtml(streamKey)}</code></div>
+        <div>Данные эфира одноразово показаны на этой странице. Не пересылайте их другим.</div>
+      `;
+    }
+
+    async function startMicrophone(broadcast) {
+      microphonePeer = new RTCPeerConnection();
+      for (const track of microphoneStream.getAudioTracks()) microphonePeer.addTrack(track, microphoneStream);
+      await microphonePeer.setLocalDescription(await microphonePeer.createOffer());
+      await new Promise((resolve, reject) => {
+        if (microphonePeer.iceGatheringState === "complete") return resolve();
+        const timeout = setTimeout(() => reject(new Error("Таймаут подключения к аудио-шлюзу.")), 8000);
+        microphonePeer.addEventListener("icegatheringstatechange", () => {
+          if (microphonePeer.iceGatheringState === "complete") {
+            clearTimeout(timeout);
+            resolve();
+          }
+        });
+      });
+
+      const response = await fetch(broadcast.whipUrl, {
+        method: "POST",
+        headers: {
+          "content-type": "application/sdp",
+          authorization: `Basic ${btoa(`${broadcast.username}:${broadcast.password}`)}`
+        },
+        body: microphonePeer.localDescription.sdp
+      });
+      if (!response.ok) throw new Error(`Не удалось подключить микрофон (HTTP ${response.status}).`);
+      const answer = await response.text();
+      const location = response.headers.get("location");
+      if (location) whipSessionUrl = new URL(location, broadcast.whipUrl).toString();
+      await microphonePeer.setRemoteDescription({ type: "answer", sdp: answer });
+    }
+
+    async function stopMicrophone() {
+      if (whipSessionUrl) {
+        await fetch(whipSessionUrl, { method: "DELETE" }).catch(() => {});
+        whipSessionUrl = null;
+      }
+      microphonePeer?.close();
+      microphonePeer = null;
+      microphoneStream?.getTracks().forEach((track) => track.stop());
+      microphoneStream = null;
+    }
+
+    async function loadQueue() {
+      const result = await api("/api/dj/queue");
+      const queueList = document.getElementById("djQueueList");
+      queueList.innerHTML = result.items.length ? result.items.map((item, index) => `
+        <div class="admin-item">
+          <div class="admin-item-title">${index + 1}. ${escapeHtml(item.title)}</div>
+          <div class="admin-item-meta">${escapeHtml(item.file)}</div>
+          <div class="admin-item-actions">
+            <button class="btn small" data-move-queue="${index}" data-target-position="${index - 1}" ${index === 0 ? "disabled" : ""} aria-label="Переместить выше">↑</button>
+            <button class="btn small" data-move-queue="${index}" data-target-position="${index + 1}" ${index === result.items.length - 1 ? "disabled" : ""} aria-label="Переместить ниже">↓</button>
+            <button class="btn small danger" data-remove-queue="${index}">Убрать</button>
+          </div>
+        </div>
+      `).join("") : '<div class="admin-muted">Очередь пуста. Добавьте треки из общей библиотеки.</div>';
+    }
+
+    document.getElementById("djQueueList").addEventListener("click", async (event) => {
+      const button = event.target?.closest?.("button");
+      if (!button) return;
+      try {
+        if (button.dataset.moveQueue !== undefined) {
+          await api(`/api/dj/queue/${button.dataset.moveQueue}`, {
+            method: "PUT", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ position: Number(button.dataset.targetPosition) })
+          });
+        } else if (button.dataset.removeQueue !== undefined) {
+          await api(`/api/dj/queue/${button.dataset.removeQueue}`, { method: "DELETE" });
+        }
+        await loadQueue();
+      } catch (error) { notify(error.message, true); }
+    });
+
+    document.getElementById("microphoneBtn").addEventListener("click", async () => {
+      const reconnect = Boolean(liveState?.microphoneEnabled && !microphoneStream);
+      if (liveState?.microphoneEnabled && !reconnect) {
+        try {
+          await api("/api/dj/on-air/microphone", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ enabled: false })
+          });
+          await stopMicrophone();
+          liveState.microphoneEnabled = false;
+          notify("Микрофон выключен.");
+          updateLiveControls();
+        } catch (error) { notify(error.message, true); }
+        return;
+      }
+
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("Браузер не поддерживает микрофон. Откройте страницу через HTTPS или localhost.");
+        }
+        microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        const result = await api("/api/dj/on-air/microphone", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ enabled: true })
+        });
+        await startMicrophone(result.broadcast);
+        liveState.microphoneEnabled = true;
+        notify("Микрофон включён поверх музыки.");
+        updateLiveControls();
+      } catch (error) {
+        await stopMicrophone();
+        let cleanupError = null;
+        try {
+          await api("/api/dj/on-air/microphone", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ enabled: false })
+          });
+        } catch (failure) {
+          cleanupError = failure;
+        }
+        notify(cleanupError
+          ? `${error.message} Не удалось отключить микрофон на сервере: ${cleanupError.message}`
+          : error.message, true);
+      }
+    });
+
+    document.getElementById("volumeSlider").addEventListener("input", (event) => {
+      document.getElementById("volumeValue").textContent = `${event.target.value}%`;
+    });
+    document.getElementById("volumeSlider").addEventListener("change", async (event) => {
+      try {
+        const volume = Number(event.target.value);
+        await api("/api/dj/on-air/volume", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ volume })
+        });
+        if (liveState) liveState.volume = volume;
+        notify(`Громкость эфира: ${volume}%.`);
+      } catch (error) {
+        notify(error.message, true);
+        await loadStatus().catch((loadError) => notify(loadError.message, true));
+      }
+    });
+
+    async function loadPlaylists(selectedId) {
+      const result = await api("/api/dj/playlists");
+      playlists = result.items;
+      const previous = selectedId || playlistSelect.value;
+      playlistSelect.innerHTML = `<option value="">Без плейлиста</option>` + playlists.map((item) =>
+        `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`
+      ).join("");
+      if (playlists.some((item) => item.id === previous)) playlistSelect.value = previous;
+      renderPlaylist();
+    }
+
+    function renderPlaylist() {
+      const playlist = playlists.find((item) => item.id === playlistSelect.value);
+      if (!playlist) {
+        playlistTracks.textContent = "Выберите плейлист или создайте новый.";
+        return;
+      }
+      const tracks = playlist.tracks.map((file, index) => `
+        <div class="admin-item">
+          <div class="admin-item-title">${index + 1}. ${escapeHtml(file)}</div>
+          <div class="admin-item-actions">
+            <button class="btn small danger" data-remove="${index}">Убрать</button>
+          </div>
+        </div>
+      `).join("");
+      playlistTracks.innerHTML = `
+        <div class="admin-item">
+          <strong>${escapeHtml(playlist.name)}</strong> · ${playlist.tracks.length} трек(ов)
+          <button class="btn small danger" data-delete-playlist="${escapeHtml(playlist.id)}">Удалить плейлист</button>
+        </div>
+        ${tracks || '<div class="admin-muted">Плейлист пуст.</div>'}
+      `;
+    }
+
+    let musicItems = [];
+    let musicPage = 1;
+    let musicLoadTimer;
+
+    function formatMusicSize(bytes) {
+      if (!Number.isFinite(bytes) || bytes < 0) return "Размер неизвестен";
+      if (bytes < 1024) return `${bytes} Б`;
+      const units = ["КБ", "МБ", "ГБ"];
+      let size = bytes / 1024;
+      let unit = 0;
+      while (size >= 1024 && unit < units.length - 1) {
+        size /= 1024;
+        unit += 1;
+      }
+      return `${size.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ${units[unit]}`;
+    }
+
+    function renderMusic() {
+      const query = musicSearch.value.trim().toLocaleLowerCase();
+      const format = musicFormat.value;
+      const sort = musicSort.value;
+      const direction = musicOrder.value === "asc" ? 1 : -1;
+      const filtered = musicItems.filter((item) => {
+        const extension = item.file.split(".").pop().toLowerCase();
+        return (format === "all" || extension === format) &&
+          (!query || item.title.toLocaleLowerCase().includes(query) || item.file.toLocaleLowerCase().includes(query));
+      }).sort((a, b) => {
+        let comparison = 0;
+        if (sort === "name") comparison = a.title.localeCompare(b.title, "ru", { sensitivity: "base" });
+        else if (sort === "size") comparison = a.size - b.size;
+        else comparison = Date.parse(a.mtime) - Date.parse(b.mtime);
+        return comparison * direction;
+      });
+      const pageSize = Number(musicPageSize.value) || 50;
+      const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+      musicPage = Math.min(musicPage, pageCount);
+      const start = (musicPage - 1) * pageSize;
+      const visible = filtered.slice(start, start + pageSize);
+
+      musicSummary.textContent = filtered.length === musicItems.length
+        ? `Всего треков: ${musicItems.length.toLocaleString("ru-RU")}`
+        : `Найдено: ${filtered.length.toLocaleString("ru-RU")} из ${musicItems.length.toLocaleString("ru-RU")}`;
+      musicPageInfo.textContent = filtered.length
+        ? `Показаны ${start + 1}–${start + visible.length} · страница ${musicPage} из ${pageCount}`
+        : "Измените запрос или фильтр, чтобы найти трек.";
+      musicPrev.disabled = musicPage <= 1;
+      musicNext.disabled = musicPage >= pageCount;
+      musicList.innerHTML = visible.length ? visible.map((item) => {
+        const extension = item.file.split(".").pop().toUpperCase();
+        const date = new Date(item.mtime);
+        const formattedDate = Number.isNaN(date.getTime()) ? "Дата неизвестна" : date.toLocaleString("ru-RU");
+        return `
+          <article class="admin-item library-track">
+            <div class="library-track-info">
+              <div class="library-track-heading">
+                <h3 class="admin-item-title">${escapeHtml(item.title)}</h3>
+                <span class="library-format">${escapeHtml(extension)}</span>
+              </div>
+              <div class="admin-item-meta library-track-meta">
+                <span class="library-filename" title="${escapeHtml(item.file)}">${escapeHtml(item.file)}</span>
+                <span>${formatMusicSize(item.size)}</span>
+                <time datetime="${escapeHtml(item.mtime)}">${escapeHtml(formattedDate)}</time>
+              </div>
+            </div>
+            <div class="admin-item-actions library-track-actions">
+              <button class="btn small" data-add-playlist="${escapeHtml(item.file)}">В плейлист</button>
+              <button class="btn small" data-add-queue="${escapeHtml(item.file)}" ${isOwner && currentSourceMode === "playlist" ? "" : "disabled"}>В очередь эфира</button>
+            </div>
+          </article>
+        `;
+      }).join("") : '<div class="library-empty">Треков по выбранным условиям нет.</div>';
+    }
+
+    async function loadMusic() {
+      refreshMusic.disabled = true;
+      musicSummary.textContent = "Загрузка библиотеки...";
+      try {
+        const result = await api("/api/dj/music");
+        if (!Array.isArray(result.items)) throw new Error("Не удалось загрузить библиотеку.");
+        musicItems = result.items;
+        musicPage = 1;
+        renderMusic();
+      } catch (error) {
+        musicSummary.textContent = "Не удалось загрузить библиотеку.";
+        musicList.innerHTML = "";
+        notify(error.message, true);
+      } finally {
+        refreshMusic.disabled = false;
+      }
+    }
+
+    document.getElementById("playlistForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        const result = await api("/api/dj/playlists", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ name: document.getElementById("playlistName").value })
+        });
+        document.getElementById("playlistName").value = "";
+        await loadPlaylists(result.playlist.id);
+        notify("Плейлист создан.");
+      } catch (error) { notify(error.message, true); }
+    });
+
+    playlistSelect.addEventListener("change", renderPlaylist);
+    playlistTracks.addEventListener("click", async (event) => {
+      const button = event.target?.closest?.("button");
+      if (!button) return;
+      try {
+        if (button.dataset.deletePlaylist) {
+          await api(`/api/dj/playlists/${encodeURIComponent(button.dataset.deletePlaylist)}`, { method: "DELETE" });
+          await loadPlaylists("");
+        } else if (button.dataset.remove !== undefined) {
+          await api(`/api/dj/playlists/${encodeURIComponent(playlistSelect.value)}/tracks/${button.dataset.remove}`, { method: "DELETE" });
+          await loadPlaylists(playlistSelect.value);
+        }
+      } catch (error) { notify(error.message, true); }
+    });
+
+    musicList.addEventListener("click", async (event) => {
+      const button = event.target?.closest?.("button");
+      if (!button) return;
+      try {
+        if (button.dataset.addPlaylist) {
+          if (!playlistSelect.value) throw new Error("Сначала выберите плейлист.");
+          await api(`/api/dj/playlists/${encodeURIComponent(playlistSelect.value)}/tracks`, {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ file: button.dataset.addPlaylist })
+          });
+          await loadPlaylists(playlistSelect.value);
+          notify("Трек добавлен в плейлист.");
+        } else if (button.dataset.addQueue) {
+          await api("/api/dj/queue", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ file: button.dataset.addQueue })
+          });
+          notify("Трек добавлен в очередь эфира.");
+        }
+      } catch (error) { notify(error.message, true); }
+    });
+
+    document.getElementById("liveBtn").addEventListener("click", async () => {
+      if (!statusLoaded || (onAir && !isOwner) || liveActionPending) return;
+      const shouldStop = isOwner;
+      liveActionPending = true;
+      updateLiveControls();
+      if (shouldStop) {
+        try {
+          await stopMicrophone();
+          await api("/api/dj/on-air/stop", { method: "POST" });
+          onAir = false;
+          isOwner = false;
+          statusLoaded = true;
+          document.getElementById("onAirStatus").textContent = "В эфире";
+          notify("Эфир завершён.");
+        } catch (error) {
+          notify(error.message, true);
+        } finally {
+          liveActionPending = false;
+          updateLiveControls();
+          await loadStatus().catch((error) => notify(error.message, true));
+        }
+        return;
+      }
+
+      let sessionStarted = false;
+      try {
+        const sourceMode = document.getElementById("sourceMode").value;
+        const playlistId = playlistSelect.value || null;
+        const result = await api("/api/dj/on-air/start", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ playlistId, sourceMode })
+        });
+        sessionStarted = true;
+        currentSourceMode = sourceMode;
+        await loadStatus();
+        if (sourceMode === "rtmp" || sourceMode === "icecast") renderBroadcastInfo(result.broadcast);
+        notify(sourceMode === "rtmp"
+          ? "Эфир зарезервирован. Подключите OBS по показанным данным."
+          : sourceMode === "icecast"
+            ? "Эфир зарезервирован. Подключите BUTT по показанным данным."
+            : "Вы в эфире.");
+      } catch (error) {
+        await stopMicrophone();
+        let cleanupError = null;
+        if (sessionStarted) {
+          try {
+            await api("/api/dj/on-air/stop", { method: "POST" });
+          } catch (stopError) {
+            cleanupError = stopError;
+          }
+        }
+        await loadStatus().catch(() => {});
+        const messageText = error.message === "already_on_air" ? "Эфир уже занят другим диджеем." : error.message;
+        notify(cleanupError
+          ? `${messageText} Не удалось автоматически завершить эфир: ${cleanupError.message}`
+          : messageText, true);
+      } finally {
+        liveActionPending = false;
+        updateLiveControls();
+      }
+    });
+
+    document.getElementById("renewCredentials").addEventListener("click", async () => {
+      try {
+        const result = await api("/api/dj/on-air/credentials", { method: "POST" });
+        renderBroadcastInfo(result.broadcast);
+        notify("Старое подключение отключено. BUTT может продолжать попытки со старыми данными — остановите вещание в BUTT и запустите его с новыми.");
+      } catch (error) {
+        await stopMicrophone();
+        notify(error.message, true);
+      }
+    });
+
+    document.getElementById("uploadForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        const response = await fetch("/api/dj/upload/music", { method: "POST", body: new FormData(event.currentTarget) });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Не удалось загрузить файл.");
+        event.currentTarget.reset();
+        notify("Трек добавлен в общую библиотеку.");
+      } catch (error) { notify(error.message, true); }
+    });
+
+    musicSearch.addEventListener("input", () => {
+      clearTimeout(musicLoadTimer);
+      musicLoadTimer = setTimeout(() => {
+        musicPage = 1;
+        renderMusic();
+      }, 120);
+    });
+    [musicFormat, musicSort, musicOrder].forEach((control) => control.addEventListener("change", () => {
+      musicPage = 1;
+      renderMusic();
+    }));
+    musicPageSize.addEventListener("change", () => {
+      musicPage = 1;
+      renderMusic();
+    });
+    musicPrev.addEventListener("click", () => {
+      musicPage -= 1;
+      renderMusic();
+    });
+    musicNext.addEventListener("click", () => {
+      musicPage += 1;
+      renderMusic();
+    });
+    refreshMusic.addEventListener("click", loadMusic);
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      if (liveState?.microphoneEnabled && isOwner) {
+        await api("/api/dj/on-air/microphone", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ enabled: false })
+        }).catch(() => {});
+      }
+      await stopMicrophone();
+      await fetch("/api/auth/logout", { method: "POST" });
+      location.assign("/login");
+    });
+
+    Promise.all([
+      loadIdentity(),
+      loadPlaylists(),
+      loadStatus(),
+      currentPage === "library" ? loadMusic() : Promise.resolve()
+    ])
+      .catch((error) => notify(error.message, true));
+    setInterval(() => loadStatus().catch((error) => notify(error.message, true)), 2000);
+  </script>
+</body>
+</html>

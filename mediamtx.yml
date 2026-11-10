@@ -1,0 +1,35 @@
+logLevel: info
+
+api: yes
+apiAddress: 127.0.0.1:9997
+
+rtsp: yes
+rtspAddress: 127.0.0.1:8554
+rtspTransports: [tcp]
+
+rtmp: yes
+rtmpAddress: :1935
+
+webrtc: yes
+webrtcAddress: 127.0.0.1:8889
+webrtcLocalUDPAddress: :8189
+webrtcAdditionalHosts: []
+
+hls: no
+srt: no
+moq: no
+
+authMethod: http
+authHTTPAddress: http://127.0.0.1:3000/api/ingest/auth
+authHTTPExclude:
+  - action: read
+  - action: playback
+  - action: api
+  - action: metrics
+  - action: pprof
+
+paths:
+  "~^dj-[A-Za-z0-9_-]{20,64}$":
+    source: publisher
+    runOnAvailable: node scripts/mediaGatewayNotify.mjs ready
+    runOnUnavailable: node scripts/mediaGatewayNotify.mjs not-ready

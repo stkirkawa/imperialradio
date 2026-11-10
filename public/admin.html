@@ -3,29 +3,83 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>IMPERIAL RADIO — Admin</title>
-  <link rel="icon" type="image/png" href="/assets/logo_hex.png" />
+  <title>SANTA MARIA RADIO — Admin</title>
+  <link rel="icon" type="image/png" href="/assets/logo.png" />
   <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/workspace.css?v=library-20261110" />
 </head>
 <body class="admin">
-  <div class="topbar">
-    <div class="wrap topbar-inner">
-      <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
-        <div>
-          <h1>IMPERIAL RADIO</h1>
-          <div class="sub">ADMIN PANEL</div>
-        </div>
+  <div class="workspace-shell">
+    <aside class="workspace-sidebar" id="workspaceSidebar">
+      <a class="workspace-brand" href="/admin/djs">
+        <img src="/assets/logo.png" alt="" />
+        <span class="workspace-brand-name"><img src="/assets/santamariaradio_text.png" alt="SANTA MARIA RADIO" /><small>ADMIN STUDIO</small></span>
+      </a>
+      <div class="sidebar-caption">Рабочее пространство</div>
+      <nav class="workspace-nav" aria-label="Меню администратора">
+        <a href="/admin/djs" data-page="djs"><span class="nav-icon">DJ</span><span>Диджеи</span></a>
+        <a href="/admin/music" data-page="music"><span class="nav-icon">♫</span><span>Библиотека</span></a>
+        <a href="/admin/uploads" data-page="uploads"><span class="nav-icon">＋</span><span>Загрузка</span></a>
+        <a href="/admin/services" data-page="services"><span class="nav-icon">◉</span><span>Службы</span></a>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <a class="sidebar-public-link" href="/" target="_blank" rel="noreferrer">Открыть радио <span>↗</span></a>
+      <div class="sidebar-account">
+        <span class="account-avatar">A</span>
+        <span class="account-name">Администратор<small>Главный доступ</small></span>
+        <button class="icon-button" id="logoutBtn" type="button" aria-label="Выйти" title="Выйти">↗</button>
       </div>
-      <div class="status" title="Статус">
-        <span class="dot"></span>
-        <span>ADMIN</span>
-      </div>
-    </div>
-  </div>
+    </aside>
+    <button class="sidebar-overlay" id="sidebarOverlay" type="button" aria-label="Закрыть меню" hidden></button>
 
-  <main>
-    <div class="admin-wrap">
+    <main class="workspace-main">
+      <header class="workspace-topbar">
+        <button class="mobile-menu-button" id="mobileMenuBtn" type="button" aria-label="Открыть меню"><span></span><span></span><span></span></button>
+        <div class="breadcrumbs">SANTA MARIA RADIO <span>/</span> <strong id="pageBreadcrumb">Диджеи</strong></div>
+        <div class="workspace-topbar-right"><span class="live-pill"><i></i> Админ-панель</span></div>
+      </header>
+      <div class="workspace-content">
+        <div class="workspace-heading">
+          <div>
+            <div class="eyebrow">УПРАВЛЕНИЕ РАДИОСТАНЦИЕЙ</div>
+            <h1 id="pageTitle">Диджеи</h1>
+            <p id="pageDescription">Создавайте аккаунты и управляйте доступом к эфиру.</p>
+          </div>
+          <div class="heading-mark"><img src="/assets/logo.png" alt="" /></div>
+        </div>
+        <div class="workspace-pages" id="workspacePages">
+      <section class="workspace-page" data-page="djs">
+      <div class="admin-card">
+        <h1 class="admin-title">Диджеи</h1>
+        <form id="djForm">
+          <label class="admin-label" for="djUsername">Логин (3–32 символа: латиница, цифры, . _ -)</label>
+          <input class="admin-input" id="djUsername" name="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9._-]+" autocomplete="off" />
+          <label class="admin-label" for="djDisplayName">Отображаемое имя</label>
+          <input class="admin-input" id="djDisplayName" name="displayName" required maxlength="64" />
+          <label class="admin-label" for="djPassword">Пароль (не менее 12 символов)</label>
+          <input class="admin-input" id="djPassword" name="password" type="password" required minlength="12" maxlength="128" autocomplete="new-password" />
+          <button class="btn" type="submit">Создать аккаунт DJ</button>
+        </form>
+        <div id="djMsg" class="admin-msg admin-muted" role="status"></div>
+        <div id="djList" class="admin-list"></div>
+      </div>
+
+      </section>
+
+      <section class="workspace-page" data-page="services" hidden>
+      <div class="admin-card">
+        <h1 class="admin-title">Службы радио</h1>
+        <div class="admin-muted">Перезапуск службы может временно прервать эфир или подключение диджея.</div>
+        <div class="admin-controls">
+          <button class="btn small" id="refreshServicesBtn" type="button">Обновить статус</button>
+        </div>
+        <div id="serviceMsg" class="admin-msg admin-muted" role="status"></div>
+        <div id="serviceList" class="admin-list">Загрузка...</div>
+      </div>
+
+      </section>
+
+      <section class="workspace-page" data-page="uploads" hidden>
       <div class="admin-card">
         <h1 class="admin-title">Загрузка файлов</h1>
         <div class="admin-muted">Музыка: <code>/radio/music</code> • Джинглы: <code>/radio/jingles</code></div>
@@ -57,19 +111,104 @@
         </form>
       </div>
 
-      <div class="admin-card">
-        <h1 class="admin-title">Библиотека треков</h1>
-        <div class="admin-muted">Поиск по названию или файлу</div>
-        <div class="admin-controls">
-          <input class="admin-input" id="songSearch" type="text" placeholder="Поиск..." autocomplete="off" />
+      </section>
+
+      <section class="workspace-page" data-page="music" hidden>
+      <div class="admin-card library-card">
+        <div class="library-header">
+          <div>
+            <h2 class="admin-title">Библиотека треков</h2>
+            <p class="admin-muted">Ищите музыку, сортируйте коллекцию и управляйте очередью эфира.</p>
+          </div>
           <button class="btn" id="refreshBtn" type="button">Обновить</button>
         </div>
-        <div id="songList" class="admin-list"></div>
+        <div class="library-toolbar">
+          <label class="library-field library-search" for="songSearch">
+            <span>Поиск</span>
+            <input class="admin-input" id="songSearch" type="search" placeholder="Название или имя файла" autocomplete="off" />
+          </label>
+          <label class="library-field" for="songFormat">
+            <span>Формат</span>
+            <select class="admin-input" id="songFormat">
+              <option value="all">Все форматы</option>
+              <option value="mp3">MP3</option>
+              <option value="flac">FLAC</option>
+              <option value="wav">WAV</option>
+              <option value="ogg">OGG</option>
+            </select>
+          </label>
+          <label class="library-field" for="songSort">
+            <span>Сортировка</span>
+            <select class="admin-input" id="songSort">
+              <option value="date">По дате загрузки</option>
+              <option value="name">По названию</option>
+              <option value="size">По размеру</option>
+            </select>
+          </label>
+          <label class="library-field" for="songOrder">
+            <span>Порядок</span>
+            <select class="admin-input" id="songOrder">
+              <option value="desc">По убыванию</option>
+              <option value="asc">По возрастанию</option>
+            </select>
+          </label>
+          <label class="library-field library-page-size" for="songPageSize">
+            <span>На странице</span>
+            <select class="admin-input" id="songPageSize">
+              <option value="25">25</option>
+              <option value="50" selected>50</option>
+              <option value="100">100</option>
+            </select>
+          </label>
+        </div>
+        <div class="library-summary">
+          <span id="songSummary" role="status" aria-live="polite">Загрузка библиотеки...</span>
+          <span id="songPageInfo"></span>
+        </div>
+        <div id="songList" class="admin-list library-list" aria-live="polite"></div>
+        <nav class="library-pagination" aria-label="Страницы библиотеки">
+          <button class="btn small" id="songPrev" type="button" disabled>← Назад</button>
+          <button class="btn small" id="songNext" type="button" disabled>Далее →</button>
+        </nav>
+        <div id="libraryMsg" class="admin-msg" role="status" aria-live="polite"></div>
       </div>
-    </div>
-  </main>
+      </section>
+        </div>
+      </div>
+    </main>
+  </div>
 
   <script>
+    const pageNames = {
+      djs: { title: "Диджеи", description: "Создавайте аккаунты и управляйте доступом к эфиру." },
+      music: { title: "Библиотека", description: "Поиск по музыкальной коллекции и управление очередью AutoDJ." },
+      uploads: { title: "Загрузка", description: "Добавляйте музыку и джинглы в эфирную коллекцию." },
+      services: { title: "Службы", description: "Состояние и управление компонентами радиостанции." }
+    };
+    const requestedPage = location.pathname.split("/").filter(Boolean).pop();
+    const currentPage = pageNames[requestedPage] ? requestedPage : "djs";
+    document.querySelectorAll(".workspace-page").forEach((page) => {
+      page.hidden = page.dataset.page !== currentPage;
+    });
+    document.querySelectorAll(".workspace-nav a").forEach((link) => {
+      if (link.dataset.page === currentPage) link.setAttribute("aria-current", "page");
+    });
+    document.getElementById("pageTitle").textContent = pageNames[currentPage].title;
+    document.getElementById("pageBreadcrumb").textContent = pageNames[currentPage].title;
+    document.getElementById("pageDescription").textContent = pageNames[currentPage].description;
+
+    const sidebar = document.getElementById("workspaceSidebar");
+    const sidebarOverlay = document.getElementById("sidebarOverlay");
+    function closeSidebar() {
+      sidebar.classList.remove("is-open");
+      sidebarOverlay.hidden = true;
+    }
+    document.getElementById("mobileMenuBtn").addEventListener("click", () => {
+      sidebar.classList.add("is-open");
+      sidebarOverlay.hidden = false;
+    });
+    sidebarOverlay.addEventListener("click", closeSidebar);
+
     const q = new URLSearchParams(location.search);
     const ok = q.get("ok");
     const err = q.get("err");
@@ -84,6 +223,21 @@
     const songList = document.getElementById("songList");
     const songSearch = document.getElementById("songSearch");
     const refreshBtn = document.getElementById("refreshBtn");
+    const songFormat = document.getElementById("songFormat");
+    const songSort = document.getElementById("songSort");
+    const songOrder = document.getElementById("songOrder");
+    const songPageSize = document.getElementById("songPageSize");
+    const songSummary = document.getElementById("songSummary");
+    const songPageInfo = document.getElementById("songPageInfo");
+    const songPrev = document.getElementById("songPrev");
+    const songNext = document.getElementById("songNext");
+    const libraryMsg = document.getElementById("libraryMsg");
+    const djForm = document.getElementById("djForm");
+    const djList = document.getElementById("djList");
+    const djMsg = document.getElementById("djMsg");
+    const serviceList = document.getElementById("serviceList");
+    const serviceMsg = document.getElementById("serviceMsg");
+    const refreshServicesBtn = document.getElementById("refreshServicesBtn");
     const STORAGE_KEY = "admin_artists";
 
     function readArtists() {
@@ -109,6 +263,134 @@
 
     if (artistList) renderArtistList();
 
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      })[char]);
+    }
+
+    async function loadDjs() {
+      try {
+        const response = await fetch("/api/admin/djs", { cache: "no-store" });
+        const result = await response.json();
+        if (!response.ok) throw new Error("Не удалось загрузить список диджеев.");
+        djList.innerHTML = result.items.length ? result.items.map((dj) => `
+          <div class="admin-item">
+            <div class="admin-item-title">${escapeHtml(dj.displayName)}</div>
+            <div class="admin-item-meta">@${escapeHtml(dj.username)} · ${dj.active ? "активен" : "отключён"}</div>
+            <div class="admin-item-actions">
+              <button class="btn small" data-dj-id="${escapeHtml(dj.id)}" data-active="${!dj.active}">
+                ${dj.active ? "Отключить" : "Включить"}
+              </button>
+            </div>
+          </div>
+        `).join("") : "Пока нет аккаунтов DJ.";
+      } catch (error) {
+        djList.textContent = error.message;
+      }
+    }
+
+    async function loadServices() {
+      refreshServicesBtn.disabled = true;
+      try {
+        const response = await fetch("/api/admin/services", { cache: "no-store" });
+        const result = await response.json();
+        if (!response.ok) throw new Error("Не удалось загрузить статусы служб.");
+        serviceList.innerHTML = result.items.map((service) => `
+          <div class="admin-item">
+            <div class="admin-item-title">${escapeHtml(service.name)} · ${escapeHtml(service.status)}</div>
+            <div class="admin-item-meta">${escapeHtml(service.description)}</div>
+            <div class="admin-item-actions">
+              <button class="btn small danger" data-restart-service="${escapeHtml(service.id)}"
+                ${service.restarting ? "disabled" : ""}>
+                ${service.restarting ? "Перезапуск..." : "Перезапустить"}
+              </button>
+            </div>
+          </div>
+        `).join("");
+      } catch (error) {
+        serviceList.textContent = error.message || "Ошибка загрузки статусов служб.";
+      } finally {
+        refreshServicesBtn.disabled = false;
+      }
+    }
+
+    serviceList.addEventListener("click", async (event) => {
+      const button = event.target?.closest?.("button[data-restart-service]");
+      if (!button || button.disabled) return;
+      const serviceId = button.dataset.restartService;
+      const serviceName = button.closest(".admin-item")?.querySelector(".admin-item-title")?.textContent || serviceId;
+      if (!confirm(`Перезапустить службу «${serviceName}»? Активное вещание через неё может прерваться.`)) return;
+      button.disabled = true;
+      button.textContent = "Перезапуск...";
+      serviceMsg.textContent = "";
+      try {
+        const response = await fetch(`/api/admin/services/${encodeURIComponent(serviceId)}/restart`, {
+          method: "POST"
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          const errors = {
+            service_restarting: "Эта служба уже перезапускается.",
+            service_restart_failed: "Не удалось перезапустить службу. Проверьте состояние helper-службы и её журнал."
+          };
+          throw new Error(errors[result.error] || "Ошибка перезапуска службы.");
+        }
+        serviceMsg.textContent = `Служба «${result.service.name}» перезапущена. Статус: ${result.service.status}.`;
+        serviceMsg.className = "admin-msg ok";
+        await loadServices();
+      } catch (error) {
+        serviceMsg.textContent = error.message || "Ошибка перезапуска службы.";
+        serviceMsg.className = "admin-msg err";
+        await loadServices();
+      }
+    });
+
+    refreshServicesBtn.addEventListener("click", loadServices);
+
+    djForm?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const formData = new FormData(djForm);
+      try {
+        const response = await fetch("/api/admin/djs", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(Object.fromEntries(formData))
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error === "username_exists" ? "Такой логин уже занят." : "Проверьте поля и длину пароля.");
+        djForm.reset();
+        djMsg.textContent = "Аккаунт создан.";
+        djMsg.className = "admin-msg ok";
+        await loadDjs();
+      } catch (error) {
+        djMsg.textContent = error.message || "Ошибка создания аккаунта.";
+        djMsg.className = "admin-msg err";
+      }
+    });
+
+    djList?.addEventListener("click", async (event) => {
+      const button = event.target?.closest?.("button[data-dj-id]");
+      if (!button) return;
+      try {
+        const response = await fetch(`/api/admin/djs/${encodeURIComponent(button.dataset.djId)}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ active: button.dataset.active === "true" })
+        });
+        if (!response.ok) throw new Error("Не удалось изменить аккаунт.");
+        await loadDjs();
+      } catch (error) {
+        djMsg.textContent = error.message;
+        djMsg.className = "admin-msg err";
+      }
+    });
+
+    document.getElementById("logoutBtn")?.addEventListener("click", async () => {
+      await fetch("/api/auth/logout", { method: "POST" });
+      location.assign("/login");
+    });
+
     form?.addEventListener("submit", () => {
       const name = (artistInput?.value || "").trim();
       if (!name) return;
@@ -121,33 +403,104 @@
       }
     });
 
+    let songs = [];
+    let currentSongPage = 1;
     let searchTimer = null;
 
-    async function loadSongs() {
-      const qv = (songSearch?.value || "").trim();
-      const url = qv ? `/api/admin/music?q=${encodeURIComponent(qv)}` : "/api/admin/music";
-      songList.textContent = "Загрузка...";
-      try {
-        const r = await fetch(url, { cache: "no-store" });
-        const j = await r.json();
-        const items = Array.isArray(j.items) ? j.items : [];
-        if (!items.length) {
-          songList.textContent = "Ничего не найдено.";
-          return;
-        }
-        songList.innerHTML = items.map((it) => `
-          <div class="admin-item">
-            <div class="admin-item-title">${it.title}</div>
-            <div class="admin-item-meta">${it.file}</div>
-            <div class="admin-item-actions">
-              <button class="btn small" data-action="next" data-file="${it.file}">Включить следующей</button>
-              <button class="btn small" data-action="queue" data-file="${it.file}">Добавить в очередь</button>
-              <button class="btn small danger" data-action="delete" data-file="${it.file}">Удалить</button>
+    function formatSongSize(bytes) {
+      if (!Number.isFinite(bytes) || bytes < 0) return "Размер неизвестен";
+      if (bytes < 1024) return `${bytes} Б`;
+      const units = ["КБ", "МБ", "ГБ"];
+      let size = bytes / 1024;
+      let unit = 0;
+      while (size >= 1024 && unit < units.length - 1) {
+        size /= 1024;
+        unit += 1;
+      }
+      return `${size.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ${units[unit]}`;
+    }
+
+    function filteredSongs() {
+      const term = (songSearch?.value || "").trim().toLocaleLowerCase();
+      const format = songFormat?.value || "all";
+      const sort = songSort?.value || "date";
+      const direction = songOrder?.value === "asc" ? 1 : -1;
+      return songs.filter((song) => {
+        const extension = song.file.split(".").pop().toLowerCase();
+        return (format === "all" || extension === format) &&
+          (!term || song.title.toLocaleLowerCase().includes(term) || song.file.toLocaleLowerCase().includes(term));
+      }).sort((a, b) => {
+        let comparison = 0;
+        if (sort === "name") comparison = a.title.localeCompare(b.title, "ru", { sensitivity: "base" });
+        else if (sort === "size") comparison = a.size - b.size;
+        else comparison = Date.parse(a.mtime) - Date.parse(b.mtime);
+        return comparison * direction;
+      });
+    }
+
+    function renderSongs() {
+      const filtered = filteredSongs();
+      const pageSize = Number(songPageSize?.value) || 50;
+      const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+      currentSongPage = Math.min(currentSongPage, pageCount);
+      const start = (currentSongPage - 1) * pageSize;
+      const visible = filtered.slice(start, start + pageSize);
+
+      songSummary.textContent = filtered.length === songs.length
+        ? `Всего треков: ${songs.length.toLocaleString("ru-RU")}`
+        : `Найдено: ${filtered.length.toLocaleString("ru-RU")} из ${songs.length.toLocaleString("ru-RU")}`;
+      songPageInfo.textContent = filtered.length
+        ? `Показаны ${start + 1}–${start + visible.length} · страница ${currentSongPage} из ${pageCount}`
+        : "Измените запрос или фильтр, чтобы найти трек.";
+      songPrev.disabled = currentSongPage <= 1;
+      songNext.disabled = currentSongPage >= pageCount;
+      songList.innerHTML = visible.length ? visible.map((it) => {
+        const extension = it.file.split(".").pop().toUpperCase();
+        const date = new Date(it.mtime);
+        const formattedDate = Number.isNaN(date.getTime()) ? "Дата неизвестна" : date.toLocaleString("ru-RU");
+        return `
+          <article class="admin-item library-track">
+            <div class="library-track-info">
+              <div class="library-track-heading">
+                <h3 class="admin-item-title">${escapeHtml(it.title)}</h3>
+                <span class="library-format">${escapeHtml(extension)}</span>
+              </div>
+              <div class="admin-item-meta library-track-meta">
+                <span class="library-filename" title="${escapeHtml(it.file)}">${escapeHtml(it.file)}</span>
+                <span>${formatSongSize(it.size)}</span>
+                <time datetime="${escapeHtml(it.mtime)}">${escapeHtml(formattedDate)}</time>
+              </div>
             </div>
-          </div>
-        `).join("");
-      } catch {
-        songList.textContent = "Ошибка загрузки.";
+            <div class="admin-item-actions library-track-actions">
+              <button class="btn small" data-action="next" data-file="${escapeHtml(it.file)}">Следующим</button>
+              <button class="btn small" data-action="queue" data-file="${escapeHtml(it.file)}">В очередь</button>
+              <button class="btn small danger" data-action="delete" data-file="${escapeHtml(it.file)}">Удалить</button>
+            </div>
+          </article>
+        `;
+      }).join("") : '<div class="library-empty">Треков по выбранным условиям нет.</div>';
+    }
+
+    async function loadSongs() {
+      refreshBtn.disabled = true;
+      songSummary.textContent = "Загрузка библиотеки...";
+      songList.innerHTML = "";
+      try {
+        const response = await fetch("/api/admin/music", { cache: "no-store" });
+        const result = await response.json();
+        if (!response.ok || !Array.isArray(result.items)) throw new Error("Не удалось загрузить библиотеку.");
+        songs = result.items;
+        currentSongPage = 1;
+        libraryMsg.textContent = "";
+        libraryMsg.className = "admin-msg";
+        renderSongs();
+      } catch (error) {
+        songSummary.textContent = "Не удалось загрузить библиотеку.";
+        songList.innerHTML = "";
+        libraryMsg.textContent = error.message || "Проверьте соединение и попробуйте ещё раз.";
+        libraryMsg.className = "admin-msg err";
+      } finally {
+        refreshBtn.disabled = false;
       }
     }
 
@@ -157,10 +510,10 @@
         if (action === "delete") {
           if (!confirm("Удалить трек навсегда?")) return;
           const r = await fetch(`/api/admin/music?file=${encodeURIComponent(file)}`, { method: "DELETE" });
-          if (!r.ok) throw new Error();
+          if (!r.ok) throw new Error("Не удалось удалить трек.");
           await loadSongs();
-          msg.textContent = "Трек удалён.";
-          msg.className = "admin-msg ok";
+          libraryMsg.textContent = "Трек удалён.";
+          libraryMsg.className = "admin-msg ok";
           return;
         }
         const endpoint = action === "next" ? "/api/admin/queue/next" : "/api/admin/queue/add";
@@ -169,12 +522,12 @@
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ file })
         });
-        if (!r.ok) throw new Error();
-        msg.textContent = action === "next" ? "Трек будет следующим." : "Трек добавлен в очередь.";
-        msg.className = "admin-msg ok";
-      } catch {
-        msg.textContent = "Ошибка операции.";
-        msg.className = "admin-msg err";
+        if (!r.ok) throw new Error("Не удалось добавить трек в эфир.");
+        libraryMsg.textContent = action === "next" ? "Трек будет следующим." : "Трек добавлен в очередь.";
+        libraryMsg.className = "admin-msg ok";
+      } catch (error) {
+        libraryMsg.textContent = error.message || "Ошибка операции.";
+        libraryMsg.className = "admin-msg err";
       }
     }
 
@@ -186,12 +539,34 @@
 
     songSearch?.addEventListener("input", () => {
       if (searchTimer) clearTimeout(searchTimer);
-      searchTimer = setTimeout(loadSongs, 250);
+      searchTimer = setTimeout(() => {
+        currentSongPage = 1;
+        renderSongs();
+      }, 120);
+    });
+
+    [songFormat, songSort, songOrder].forEach((control) => control?.addEventListener("change", () => {
+      currentSongPage = 1;
+      renderSongs();
+    }));
+    songPageSize?.addEventListener("change", () => {
+      currentSongPage = 1;
+      renderSongs();
+    });
+    songPrev?.addEventListener("click", () => {
+      currentSongPage -= 1;
+      renderSongs();
+    });
+    songNext?.addEventListener("click", () => {
+      currentSongPage += 1;
+      renderSongs();
     });
 
     refreshBtn?.addEventListener("click", loadSongs);
 
-    loadSongs();
+    if (currentPage === "djs") loadDjs();
+    if (currentPage === "music") loadSongs();
+    if (currentPage === "services") loadServices();
   </script>
 </body>
 </html>

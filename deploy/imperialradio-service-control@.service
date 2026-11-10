@@ -1,0 +1,17 @@
+[Unit]
+Description=IMPERIAL RADIO restricted service control request
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+StandardInput=socket
+StandardOutput=socket
+ExecStart=/usr/bin/python3 /usr/local/libexec/imperialradio-service-control.py
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true

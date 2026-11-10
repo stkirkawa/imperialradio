@@ -1,0 +1,13 @@
+[Unit]
+Description=IMPERIAL RADIO restricted service control socket
+
+[Socket]
+ListenStream=/run/imperialradio-service-control.sock
+SocketUser=imperialradio
+SocketGroup=radioaudio
+SocketMode=0600
+Accept=yes
+RemoveOnStop=yes
+
+[Install]
+WantedBy=sockets.target

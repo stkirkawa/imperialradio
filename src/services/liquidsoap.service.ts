@@ -43,3 +43,16 @@ export async function sendLiquidsoapCommand(command: string, timeoutMs = 4000): 
     });
   });
 }
+
+export async function setLiquidsoapVolume(percent: number): Promise<void> {
+  if (!Number.isInteger(percent) || percent < 0 || percent > 100) {
+    throw new Error('Volume must be an integer between 0 and 100');
+  }
+  const { ok, lines } = await sendLiquidsoapCommand(`imperial_radio.volume ${percent}`);
+  if (!ok) throw new Error(lines.join('\n') || 'Liquidsoap volume command failed');
+}
+
+export async function setLiquidsoapMicrophone(enabled: boolean): Promise<void> {
+  const { ok, lines } = await sendLiquidsoapCommand(`imperial_radio.mic ${enabled ? 'on' : 'off'}`);
+  if (!ok) throw new Error(lines.join('\n') || 'Liquidsoap microphone command failed');
+}

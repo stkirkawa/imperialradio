@@ -1,0 +1,194 @@
+:root {
+  --brand-peach: #ff9c65;
+  --brand-coral: #ff665d;
+  --brand-pink: #fb164b;
+  --brand-gradient: linear-gradient(110deg, #ff9c65 0%, #ff665d 55%, #fb164b 100%);
+  --bg-main: #222326;
+  --bg-card: #2c2d30;
+  --text-primary: #f5f2ef;
+  --text-secondary: #aaa9a9;
+  --border-color: #414144;
+  --radius: 14px;
+  --shadow: 0 8px 30px rgba(0, 0, 0, .18);
+}
+
+body:not(.admin) {
+  background: var(--bg-main);
+  color: var(--text-primary);
+  font-family: Inter, Arial, sans-serif;
+}
+
+body:not(.admin) .brand,
+body:not(.admin) .brand > div {
+  min-width: 0;
+}
+
+body:not(.admin) .brand h1 img {
+  display: block;
+  width: min(190px, 42vw);
+  max-width: 100%;
+  max-height: 64px;
+  height: auto;
+  object-fit: contain;
+}
+
+body:not(.admin) .topbar {
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(29, 30, 32, .96);
+}
+
+body:not(.admin) .logo {
+  border: 1px solid var(--border-color);
+  background-color: #292a2d;
+  background-image: url("/assets/logo.png");
+  box-shadow: none;
+}
+
+body:not(.admin) .brand .sub,
+body:not(.admin) .desc,
+body:not(.admin) .nowlabel,
+body:not(.admin) .nowmeta,
+body:not(.admin) .footer {
+  color: var(--text-secondary);
+}
+
+body:not(.admin) .status {
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+}
+
+body:not(.admin) .dot {
+  box-shadow: 0 0 0 4px rgba(255, 156, 101, .12);
+}
+
+body:not(.admin) .hero {
+  border-bottom: 1px solid var(--border-color);
+  background:
+    linear-gradient(rgba(34, 35, 38, .92), rgba(34, 35, 38, .97)),
+    url("/assets/background.png") center / cover no-repeat;
+}
+
+body:not(.admin) .panel,
+body:not(.admin) .nowbox {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  box-shadow: var(--shadow);
+}
+
+body:not(.admin) .nowbox {
+  background: rgba(34, 35, 38, .68);
+}
+
+body:not(.admin) .live {
+  border: 1px solid rgba(255, 102, 93, .35);
+  border-radius: 999px;
+  background: rgba(255, 102, 93, .14);
+  color: var(--text-primary);
+}
+
+body:not(.admin) .art {
+  border: 1px solid var(--border-color);
+  background: linear-gradient(135deg, rgba(255, 156, 101, .3), rgba(251, 22, 75, .18));
+  box-shadow: none;
+}
+
+body:not(.admin) .btn {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  font-family: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  transition: transform .2s, filter .2s;
+}
+
+body:not(.admin) .btn.primary {
+  border-color: transparent;
+  background: var(--brand-gradient);
+  color: #fff;
+}
+
+body:not(.admin) .btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+}
+
+body:not(.admin) .slider {
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+}
+
+body:not(.admin) input[type="range"] {
+  accent-color: var(--brand-coral);
+}
+
+body:not(.admin) .section {
+  border-bottom: 1px solid var(--border-color);
+}
+
+body:not(.admin) .history {
+  border-left: 2px solid var(--brand-coral);
+}
+
+body:not(.admin) .item {
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+}
+
+body:not(.admin) .item:before {
+  box-shadow: 0 0 0 4px rgba(255, 156, 101, .12);
+}
+
+body:not(.admin) .footer {
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-main);
+}
+
+body:not(.admin) .toast {
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 10px;
+  background: var(--brand-gradient);
+  color: #fff;
+}
+
+@media (max-width: 600px) {
+  body:not(.admin) .topbar-inner {
+    gap: 8px;
+    padding: 10px 0;
+  }
+
+  body:not(.admin) .brand {
+    flex: 1 1 auto;
+    gap: 8px;
+  }
+
+  body:not(.admin) .brand h1 img {
+    width: min(150px, 34vw);
+  }
+
+  body:not(.admin) .brand .sub {
+    font-size: 8px;
+    letter-spacing: .06em;
+    white-space: nowrap;
+  }
+
+  body:not(.admin) .status {
+    flex: 0 0 auto;
+    gap: 6px;
+    padding: 7px 9px;
+    font-size: 10px;
+    letter-spacing: .06em;
+  }
+
+  body:not(.admin) .hero-title h2 {
+    font-size: 30px;
+  }
+
+  body:not(.admin) .controls {
+    align-items: stretch;
+  }
+
+  body:not(.admin) .controls .btn {
+    flex: 1 1 auto;
+  }
+}

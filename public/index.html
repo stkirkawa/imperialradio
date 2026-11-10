@@ -3,10 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="theme-color" content="#0b0b0b" />
-  <title>IMPERIAL RADIO</title>
-  <link rel="icon" type="image/png" href="/assets/logo_hex.png" />
+  <meta name="theme-color" content="#222326" />
+  <title>SANTA MARIA RADIO</title>
+  <link rel="icon" type="image/png" href="/assets/logo.png" />
   <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/public-theme.css?v=20261110-header" />
 </head>
 <body>
   <div class="topbar">
@@ -14,7 +15,7 @@
       <div class="brand">
         <div class="logo" aria-hidden="true"></div>
         <div>
-          <h1>IMPERIAL RADIO</h1>
+          <h1><img src="/assets/santamariaradio_text.png" alt="SANTA MARIA RADIO" /></h1>
           <div class="sub">СУПЕРХИТЫ • 24/7 • LIVE</div>
         </div>
       </div>
@@ -30,11 +31,9 @@
       <div class="wrap hero-grid">
         <div class="panel">
           <div class="hero-title">
-            <h2>IMPERIAL<br/>RADIO</h2>
+            <h2>SANTA MARIA<br/>RADIO</h2>
             <div class="live">LIVE</div>
           </div>
-          <div class="desc">Ритм. Власть. Музыка. IMPERIAL RADIO</div>
-
           <div class="nowbox">
             <div class="nowlabel">СЕЙЧАС ИГРАЕТ</div>
             <div class="nowrow">
@@ -42,6 +41,7 @@
               <div class="nowtext">
                 <div class="nowtitle" id="nowTitle">—</div>
                 <div class="nowmeta">
+                  <span id="onAirLabel">В эфире</span>
                   <span>СЛУШАТЕЛЕЙ: <strong id="listeners">0</strong></span>
                   <span>ОБНОВЛЕНО: <span id="updated">—</span></span>
                 </div>
@@ -80,7 +80,7 @@
 
   <footer class="footer">
     <div class="wrap">
-      © <span id="year"></span> IMPERIAL RADIO • Некоммерческий онлайн‑проект • Контент используется с соблюдением прав и лицензий • <a href="/policy">Политика</a>
+      © <span id="year"></span> SANTA MARIA RADIO • Некоммерческий онлайн‑проект • Контент используется с соблюдением прав и лицензий • <a href="/policy">Политика</a>
     </div>
   </footer>
 
@@ -90,9 +90,11 @@
     const NOWPLAYING_URL = "/api/nowplaying";
     const POLL_MS = 7000;
     const HISTORY_MAX = 12;
+    const STREAM_URL = "/stream";
 
     const nowTitleEl = document.getElementById("nowTitle");
     const listenersEl = document.getElementById("listeners");
+    const onAirLabelEl = document.getElementById("onAirLabel");
     const updatedEl = document.getElementById("updated");
     const statusDot = document.getElementById("statusDot");
     const statusText = document.getElementById("statusText");
@@ -113,7 +115,10 @@
     document.getElementById("year").textContent = new Date().getFullYear();
     renderHistory();
     player.volume = Number(vol.value);
-    let isPlaying = false;
+    let playbackRequested = false;
+    let reconnectTimer = null;
+    let stalledTimer = null;
+    let reconnectAttempts = 0;
     let lastVolume = Number(vol.value) || 0.9;
 
     function setStatus(state) {
@@ -121,6 +126,7 @@
         playing: { t: "В ЭФИРЕ", dot: "var(--accent2)", glow: "rgba(255,138,0,.2)" },
         paused:  { t: "ПАУЗА",   dot: "var(--warn)", glow: "rgba(255,204,0,.12)" },
         loading: { t: "ЗАГРУЗКА", dot: "var(--warn)", glow: "rgba(255,204,0,.12)" },
+        reconnecting: { t: "ПЕРЕПОДКЛЮЧЕНИЕ", dot: "var(--warn)", glow: "rgba(255,204,0,.12)" },
         error:   { t: "ОШИБКА",  dot: "var(--danger)", glow: "rgba(255,77,79,.14)" }
       };
       const s = map[state] || map.paused;
@@ -164,32 +170,69 @@
         const title = (j.title && j.title.trim()) ? j.title : "—";
         nowTitleEl.textContent = title;
         listenersEl.textContent = (j.listeners ?? 0);
+        onAirLabelEl.textContent = j.onAirLabel || "В эфире";
         updatedEl.textContent = formatTime(new Date());
         pushHistory(title);
       } catch {}
     }
 
+    function clearReconnectTimers() {
+      clearTimeout(reconnectTimer);
+      clearTimeout(stalledTimer);
+      reconnectTimer = null;
+      stalledTimer = null;
+    }
+
+    function setStreamUrl() {
+      const source = player.querySelector("source");
+      source.src = `${STREAM_URL}?t=${Date.now()}`;
+      player.load();
+    }
+
+    function scheduleReconnect() {
+      if (!playbackRequested || reconnectTimer) return;
+      clearTimeout(stalledTimer);
+      stalledTimer = null;
+      const delay = Math.min(30000, 1000 * (2 ** Math.min(reconnectAttempts, 5)));
+      reconnectAttempts += 1;
+      setStatus("reconnecting");
+      reconnectTimer = setTimeout(async () => {
+        reconnectTimer = null;
+        if (!playbackRequested) return;
+        setStreamUrl();
+        try {
+          await player.play();
+        } catch {
+          scheduleReconnect();
+        }
+      }, delay);
+    }
+
     async function play() {
+      playbackRequested = true;
+      reconnectAttempts = 0;
+      clearReconnectTimers();
+      playBtn.textContent = "⏸ ПАУЗА";
       setStatus("loading");
       try {
-        player.load();
+        setStreamUrl();
         await player.play();
-        isPlaying = true;
         playBtn.textContent = "⏸ ПАУЗА";
         setStatus("playing");
       } catch {
-        setStatus("error");
+        scheduleReconnect();
       }
     }
 
     function pause() {
+      playbackRequested = false;
+      clearReconnectTimers();
       player.pause();
-      isPlaying = false;
       playBtn.textContent = "▶ ИГРАТЬ";
       setStatus("paused");
     }
 
-    playBtn.addEventListener("click", () => { if (!isPlaying) play(); else pause(); });
+    playBtn.addEventListener("click", () => { if (!playbackRequested) play(); else pause(); });
         muteBtn.addEventListener("click", () => {
       if (!player.muted) {
         lastVolume = player.volume || Number(vol.value) || 0.9;
@@ -216,16 +259,36 @@
       }
     });
 
-    player.addEventListener("playing", () => setStatus("playing"));
-    player.addEventListener("pause", () => { if (!player.ended) setStatus("paused"); });
-    player.addEventListener("waiting", () => setStatus("loading"));
-    player.addEventListener("error", () => setStatus("error"));
+    player.addEventListener("playing", () => {
+      clearReconnectTimers();
+      reconnectAttempts = 0;
+      playBtn.textContent = "⏸ ПАУЗА";
+      setStatus("playing");
+    });
+    player.addEventListener("pause", () => {
+      if (!playbackRequested && !player.ended) setStatus("paused");
+    });
+    player.addEventListener("waiting", () => {
+      if (!playbackRequested) return;
+      setStatus("loading");
+      if (!stalledTimer) {
+        stalledTimer = setTimeout(() => {
+          stalledTimer = null;
+          if (playbackRequested && player.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) {
+            scheduleReconnect();
+          }
+        }, 15000);
+      }
+    });
+    player.addEventListener("stalled", scheduleReconnect);
+    player.addEventListener("error", scheduleReconnect);
+    player.addEventListener("ended", scheduleReconnect);
 
     shareBtn.addEventListener("click", async () => {
       const url = location.href;
       try {
         if (navigator.share) {
-          await navigator.share({ title: "IMPERIAL RADIO", text: "Слушай радио онлайн", url });
+          await navigator.share({ title: "SANTA MARIA RADIO", text: "Слушай радио онлайн", url });
         } else {
           await navigator.clipboard.writeText(url);
           showToast("Ссылка скопирована");

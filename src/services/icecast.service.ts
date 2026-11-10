@@ -7,6 +7,7 @@ export type NowPlaying = {
   listeners: number;
   mount: string;
   updatedAt: string;
+  onAirLabel?: string;
 };
 
 export type IcecastSource = {
