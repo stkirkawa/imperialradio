@@ -33,6 +33,7 @@ const envSchema = z.object({
   ICECAST_RAW_INGEST_PORT: z.coerce.number().int().min(1).max(65535).default(8007),
   LIVE_INGRESS_PASSWORD: z.string().default('CHANGE_ME_LOCAL_INGRESS_PASSWORD'),
   FFMPEG_PATH: z.string().default('ffmpeg'),
+  FFPROBE_PATH: z.string().default('ffprobe'),
 
   MAX_UPLOAD_MB: z.coerce.number().int().min(1).max(1024).default(100),
   NOWPLAYING_CACHE_MS: z.coerce.number().int().min(0).max(60_000).default(3000),

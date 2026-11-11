@@ -32,6 +32,16 @@ export type Playlist = {
   updatedAt: string;
 };
 
+export type TrackSuggestion = {
+  id: string;
+  nickname: string;
+  artist: string;
+  title: string;
+  filename: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+};
+
 export type OnAirState = {
   djId: string;
   djUsername: string;
@@ -156,8 +166,24 @@ export class RadioStore {
         updated_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS track_suggestions (
+        id TEXT PRIMARY KEY,
+        nickname TEXT NOT NULL DEFAULT '',
+        artist TEXT NOT NULL DEFAULT '',
+        title TEXT NOT NULL DEFAULT '',
+        filename TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS track_suggestions_status_created ON track_suggestions(status, created_at DESC);
+
       INSERT OR IGNORE INTO radio_state (id) VALUES (1);
     `);
+
+    const suggestionColumns = this.db.prepare('PRAGMA table_info(track_suggestions)').all() as Array<{ name: string }>;
+    if (!suggestionColumns.some((column) => column.name === 'nickname')) {
+      this.db.exec("ALTER TABLE track_suggestions ADD COLUMN nickname TEXT NOT NULL DEFAULT ''");
+    }
 
     const radioStateColumns = this.db.prepare('PRAGMA table_info(radio_state)').all() as Array<{ name: string }>;
     if (!radioStateColumns.some((column) => column.name === 'source_mode')) {
@@ -582,6 +608,45 @@ export class RadioStore {
     const expected = Buffer.from(row.token_hash, 'hex');
     const actual = Buffer.from(hashToken(token), 'hex');
     return expected.length === actual.length && timingSafeEqual(expected, actual) ? mapUser(row) : null;
+  }
+
+  createTrackSuggestion(input: { nickname: string; artist: string; title: string; filename: string }): TrackSuggestion {
+    const suggestion: TrackSuggestion = {
+      id: makeId(), nickname: input.nickname, artist: input.artist, title: input.title, filename: input.filename,
+      status: 'pending', createdAt: new Date().toISOString()
+    };
+    this.db.prepare(`
+      INSERT INTO track_suggestions (id, nickname, artist, title, filename, status, created_at)
+      VALUES (?, ?, ?, ?, ?, 'pending', ?)
+    `).run(suggestion.id, suggestion.nickname, suggestion.artist, suggestion.title, suggestion.filename, suggestion.createdAt);
+    return suggestion;
+  }
+
+  listTrackSuggestions(status: TrackSuggestion['status'] | 'all' = 'pending'): TrackSuggestion[] {
+    const rows = (status === 'all'
+      ? this.db.prepare('SELECT * FROM track_suggestions ORDER BY created_at DESC').all()
+      : this.db.prepare('SELECT * FROM track_suggestions WHERE status = ? ORDER BY created_at DESC').all(status)) as Array<{
+        id: string; nickname: string; artist: string; title: string; filename: string;
+        status: TrackSuggestion['status']; created_at: string;
+      }>;
+    return rows.map((row) => ({
+      id: row.id, nickname: row.nickname, artist: row.artist, title: row.title, filename: row.filename,
+      status: row.status, createdAt: row.created_at
+    }));
+  }
+
+  getTrackSuggestion(id: string): TrackSuggestion | null {
+    const row = this.db.prepare('SELECT id, nickname, artist, title, filename, status, created_at FROM track_suggestions WHERE id = ?').get(id) as {
+      id: string; nickname: string; artist: string; title: string; filename: string; status: TrackSuggestion['status']; created_at: string;
+    } | undefined;
+    return row ? { id: row.id, nickname: row.nickname, artist: row.artist, title: row.title, filename: row.filename, status: row.status, createdAt: row.created_at } : null;
+  }
+
+  resolveTrackSuggestion(id: string, status: 'approved' | 'rejected', filename?: string): boolean {
+    return this.db.prepare(`
+      UPDATE track_suggestions SET status = ?, filename = COALESCE(?, filename)
+      WHERE id = ? AND status = 'pending'
+    `).run(status, filename ?? null, id).changes === 1;
   }
 }
 

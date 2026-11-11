@@ -319,6 +319,39 @@ body:not(.admin) .toast {
   color: #fff;
 }
 
+body:not(.admin) .suggestion-dialog { width: min(510px, calc(100vw - 28px)); max-width: none; max-height: min(92vh, 780px); padding: 0; overflow: auto; border: 1px solid rgba(255, 255, 255, .14); border-radius: 24px; background: #28292d; color: var(--text-primary); box-shadow: 0 30px 100px rgba(0, 0, 0, .62); }
+body:not(.admin) .suggestion-dialog[open] { animation: suggestion-pop .32s cubic-bezier(.2,.8,.25,1) both; }
+body:not(.admin) .suggestion-dialog::backdrop { background: rgba(10, 10, 12, .75); backdrop-filter: blur(8px); animation: suggestion-backdrop .2s ease both; }
+body:not(.admin) .suggestion-form { position: relative; display: grid; gap: 10px; padding: clamp(23px, 6vw, 34px); }
+body:not(.admin) .suggestion-close { position: absolute; top: 16px; right: 16px; display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid rgba(255,255,255,.1); border-radius: 50%; background: rgba(255,255,255,.05); color: #eee; font-size: 22px; cursor: pointer; transition: transform .2s ease, background .2s ease; }
+body:not(.admin) .suggestion-close:hover { transform: rotate(90deg); background: rgba(255,255,255,.12); }
+body:not(.admin) .suggestion-kicker { color: var(--brand-peach); font-size: 9px; font-weight: 800; letter-spacing: .16em; }
+body:not(.admin) .suggestion-form h2 { margin: 3px 0 0; font-size: clamp(25px, 6vw, 32px); letter-spacing: -.04em; }
+body:not(.admin) .suggestion-form > p { margin: 0 0 6px; color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
+body:not(.admin) .suggestion-form > label:not(.suggestion-file) { display: flex; justify-content: space-between; margin-top: 6px; color: #e8e2df; font-size: 11px; font-weight: 700; }
+body:not(.admin) .suggestion-form > label > span { color: #8d8b8d; font-weight: 500; }
+body:not(.admin) .suggestion-form > input:not([type="file"]) { width: 100%; min-height: 44px; padding: 0 13px; border: 1px solid rgba(255,255,255,.1); border-radius: 11px; outline: 0; background: rgba(255,255,255,.045); color: #fff; font: inherit; font-size: 13px; transition: border .2s ease, box-shadow .2s ease; }
+body:not(.admin) .suggestion-form > input:focus { border-color: rgba(255,156,101,.65); box-shadow: 0 0 0 3px rgba(255,156,101,.12); }
+body:not(.admin) .suggestion-file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; clip-path: inset(50%); }
+body:not(.admin) .suggestion-file { display: flex; min-height: 70px; align-items: center; gap: 12px; margin-top: 7px; padding: 12px; border: 1px dashed rgba(255,156,101,.4); border-radius: 13px; background: rgba(255,156,101,.045); cursor: pointer; transition: background .2s ease, border .2s ease, transform .2s ease; }
+body:not(.admin) .suggestion-file:hover { transform: translateY(-1px); border-color: var(--brand-peach); background: rgba(255,156,101,.09); }
+body:not(.admin) .suggestion-file:focus-within { outline: 3px solid rgba(255,156,101,.24); }
+body:not(.admin) .suggestion-file-icon { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 12px; background: var(--brand-gradient); color: white; font-size: 19px; }
+body:not(.admin) .suggestion-file > span:nth-child(2) { display: grid; min-width: 0; gap: 4px; flex: 1; }
+body:not(.admin) .suggestion-file strong { overflow: hidden; color: #fff; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+body:not(.admin) .suggestion-file small { color: var(--text-secondary); font-size: 10px; }
+body:not(.admin) .suggestion-file-action { padding: 7px 10px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; color: #eee; font-size: 10px; font-weight: 700; }
+body:not(.admin) .suggestion-feedback { min-height: 18px; color: var(--text-secondary); font-size: 11px; }
+body:not(.admin) .suggestion-feedback.is-success { color: #91dfa7; }
+body:not(.admin) .suggestion-feedback.is-error { color: #ff9b9d; }
+body:not(.admin) .suggestion-submit { display: flex; min-height: 48px; align-items: center; justify-content: space-between; padding: 0 16px; border: 0; border-radius: 12px; background: var(--brand-gradient); color: white; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; transition: transform .2s ease, box-shadow .2s ease, filter .2s ease; }
+body:not(.admin) .suggestion-submit:hover { transform: translateY(-2px); box-shadow: 0 9px 25px rgba(251,22,75,.24); }
+body:not(.admin) .suggestion-submit:disabled { cursor: wait; opacity: .7; }
+body:not(.admin) .suggestion-submit.is-loading > span:last-child { animation: loading-pulse .5s infinite alternate; }
+body:not(.admin) .suggestion-footnote { color: #858386; font-size: 9px; line-height: 1.5; text-align: center; }
+@keyframes suggestion-pop { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes suggestion-backdrop { from { opacity: 0; } to { opacity: 1; } }
+
 @media (max-width: 600px) {
   body:not(.admin) .topbar-inner {
     gap: 8px;

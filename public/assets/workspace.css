@@ -822,6 +822,82 @@ body.admin .workspace-heading h1 { animation: workspace-title-in .55s .1s ease b
 body.admin .workspace-brand > img { transition: transform .45s ease; }
 body.admin .workspace-brand:hover > img { transform: rotate(-7deg) scale(1.04); }
 body.admin.login-page .admin-card { animation: workspace-card-in .65s cubic-bezier(.2,.75,.25,1) both; }
+body.admin .nav-soon { margin-left: auto; padding: 4px 6px; border: 1px solid rgba(255,156,101,.2); border-radius: 6px; color: #ffb88c; font-size: 8px; font-weight: 800; letter-spacing: .08em; }
+body.admin .suggestion-count { display: grid; min-width: 22px; height: 22px; margin-left: auto; place-items: center; border-radius: 99px; background: linear-gradient(130deg, #ff9c65, #ff665d); color: #241c1a; font-size: 10px; font-weight: 900; font-variant-numeric: tabular-nums; }
+body.admin .suggestion-count[hidden] { display: none; }
+body.admin .suggestions-admin-header, body.admin .messages-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+body.admin .suggestions-admin-header .admin-title, body.admin .messages-header .admin-title { margin: 6px 0 5px; font-size: 22px; letter-spacing: -.035em; }
+body.admin .suggestions-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin: 23px 0 14px; padding: 14px; border: 1px solid rgba(255,255,255,.08); border-radius: 13px; background: rgba(255,255,255,.025); }
+body.admin .suggestions-summary { display: flex; align-items: center; gap: 11px; }
+body.admin .suggestion-summary-icon { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 12px; background: rgba(255,156,101,.12); color: var(--brand-peach); font-size: 18px; }
+body.admin .suggestions-summary strong, body.admin .suggestions-summary small { display: block; }
+body.admin .suggestions-summary strong { font-size: 13px; }
+body.admin .suggestions-summary small { margin-top: 4px; color: var(--text-secondary); font-size: 10px; }
+body.admin .suggestions-toolbar .library-field { display: flex; align-items: center; gap: 9px; margin: 0; }
+body.admin .suggestions-toolbar .admin-input { min-width: 140px; }
+body.admin .suggestion-item { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 15px; }
+body.admin .suggestion-art { display: grid; width: 44px; height: 44px; place-items: center; border: 1px solid rgba(255,156,101,.2); border-radius: 13px; background: linear-gradient(145deg, rgba(255,156,101,.16), rgba(251,22,75,.1)); color: #ffb388; font-size: 18px; }
+body.admin .suggestion-info { min-width: 0; }
+body.admin .suggestion-title-row { display: flex; align-items: center; gap: 9px; }
+body.admin .suggestion-title-row h3 { overflow: hidden; margin: 0; font-size: 13px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+body.admin .suggestion-status { flex: 0 0 auto; padding: 4px 7px; border: 1px solid rgba(255,255,255,.1); border-radius: 99px; color: #d5d0ce; font-size: 9px; font-weight: 700; }
+body.admin .suggestion-status.is-pending { border-color: rgba(255,156,101,.25); background: rgba(255,156,101,.08); color: #ffc29d; }
+body.admin .suggestion-status.is-approved { border-color: rgba(107,211,139,.2); background: rgba(107,211,139,.08); color: #9fe1b0; }
+body.admin .suggestion-status.is-rejected { border-color: rgba(255,102,93,.2); background: rgba(255,102,93,.08); color: #ffa5a1; }
+body.admin .suggestion-meta { display: flex; flex-wrap: wrap; gap: 5px 13px; margin-top: 7px; color: var(--text-secondary); font-size: 10px; }
+body.admin .suggestion-meta > span { max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.admin .suggestion-nickname { color: #ffd0b2; font-size: 10px; font-weight: 750; }
+body.admin .library-track-artist { margin-top: 4px; color: #b8b2b2; font-size: 10px; font-weight: 550; }
+body.admin .music-tags-dialog { width: min(480px, calc(100vw - 28px)); max-width: none; padding: 0; overflow: auto; border: 1px solid rgba(255,255,255,.13); border-radius: 19px; background: #292a2d; color: var(--text-primary); box-shadow: 0 24px 80px rgba(0,0,0,.6); }
+body.admin .music-tags-dialog::backdrop { background: rgba(8,8,10,.72); backdrop-filter: blur(6px); }
+body.admin .music-tags-dialog[open] { animation: workspace-card-in .25s cubic-bezier(.2,.75,.25,1) both; }
+body.admin .music-tags-form { display: grid; gap: 9px; padding: clamp(20px, 5vw, 28px); }
+body.admin .music-tags-kicker { color: #ffad7b; font-size: 9px; font-weight: 850; letter-spacing: .15em; }
+body.admin .music-tags-form h2 { margin: 2px 0 0; font-size: 23px; letter-spacing: -.035em; }
+body.admin .music-tags-filename { margin: -3px 0 7px; overflow: hidden; color: var(--text-secondary); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+body.admin .music-tags-form .admin-label { margin: 3px 0 0; }
+body.admin .music-tags-form .admin-input { width: 100%; }
+body.admin .music-tags-message { min-height: 16px; color: var(--text-secondary); font-size: 10px; }
+body.admin .music-tags-message.is-error { color: #ff9d9e; }
+body.admin .music-tags-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 5px; }
+body.admin .music-tags-actions .btn[type="submit"] { border: 0; background: linear-gradient(110deg, #ff9c65, #ff665d 55%, #fb164b); color: white; }
+body.admin .suggestion-audio { display: block; width: min(390px, 100%); height: 34px; margin-top: 9px; border-radius: 99px; filter: saturate(.82); }
+body.admin .suggestion-actions { display: flex; align-items: center; gap: 7px; }
+body.admin .suggestion-approve { border-color: transparent; background: linear-gradient(120deg, #ff9c65, #ff665d); color: #fff; }
+body.admin .suggestion-library-note { color: #9fe1b0; font-size: 10px; white-space: nowrap; }
+body.admin .suggestions-empty { display: grid; min-height: 210px; place-content: center; justify-items: center; gap: 8px; border: 1px dashed rgba(255,255,255,.1); border-radius: 14px; color: var(--text-secondary); text-align: center; }
+body.admin .suggestions-empty > span { display: grid; width: 43px; height: 43px; place-items: center; border-radius: 14px; background: rgba(255,156,101,.1); color: var(--brand-peach); font-size: 20px; }
+body.admin .suggestions-empty strong { color: var(--text-primary); font-size: 13px; }
+body.admin .suggestions-empty small { max-width: 280px; font-size: 11px; line-height: 1.55; }
+body.admin .messages-status { display: inline-flex; align-items: center; gap: 8px; padding: 8px 11px; border: 1px solid rgba(255,255,255,.08); border-radius: 99px; color: var(--text-secondary); font-size: 10px; white-space: nowrap; }
+body.admin .messages-status i { width: 7px; height: 7px; border-radius: 50%; background: #77777b; }
+body.admin .messages-layout { display: grid; grid-template-columns: minmax(190px, .7fr) minmax(0, 1.6fr); min-height: 440px; margin-top: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); border-radius: 16px; background: #242528; }
+body.admin .messages-list { padding: 14px; border-right: 1px solid rgba(255,255,255,.07); }
+body.admin .messages-search { display: flex; align-items: center; gap: 8px; padding: 10px; border: 1px solid rgba(255,255,255,.08); border-radius: 10px; color: #85858a; font-size: 11px; }
+body.admin .messages-search:first-letter { color: var(--brand-peach); font-size: 17px; }
+body.admin .messages-empty-list { display: grid; justify-items: center; gap: 7px; padding: 45px 12px; color: var(--text-secondary); text-align: center; }
+body.admin .messages-empty-list > span { display: grid; width: 37px; height: 37px; place-items: center; border-radius: 12px; background: rgba(255,156,101,.1); color: var(--brand-peach); }
+body.admin .messages-empty-list strong { color: #e9e4e2; font-size: 12px; }
+body.admin .messages-empty-list small { max-width: 200px; font-size: 10px; line-height: 1.6; }
+body.admin .messages-conversation { display: grid; min-width: 0; grid-template-rows: auto 1fr auto; }
+body.admin .conversation-top { display: flex; align-items: center; gap: 11px; padding: 13px 16px; border-bottom: 1px solid rgba(255,255,255,.07); }
+body.admin .conversation-avatar { display: grid; width: 37px; height: 37px; place-items: center; border-radius: 50%; background: linear-gradient(135deg, #ff9c65, #fb164b); color: #fff; }
+body.admin .conversation-top > div { display: grid; min-width: 0; gap: 4px; flex: 1; }
+body.admin .conversation-top strong { font-size: 12px; }
+body.admin .conversation-top small { overflow: hidden; color: var(--text-secondary); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+body.admin .demo-badge { padding: 4px 6px; border: 1px solid rgba(255,156,101,.2); border-radius: 6px; color: #ffc29d; font-size: 8px; font-weight: 900; letter-spacing: .08em; }
+body.admin .conversation-body { display: flex; min-height: 295px; flex-direction: column; align-items: flex-start; gap: 12px; padding: 18px; background: radial-gradient(ellipse at 80% 90%, rgba(251,22,75,.055), transparent 45%); }
+body.admin .chat-date { align-self: center; margin: 2px 0 8px; color: #85858a; font-size: 8px; font-weight: 800; letter-spacing: .12em; }
+body.admin .chat-bubble { max-width: min(78%, 340px); padding: 11px 13px; border: 1px solid rgba(255,255,255,.07); border-radius: 13px 13px 13px 4px; background: #303135; color: #e8e4e2; font-size: 11px; line-height: 1.5; animation: workspace-card-in .4s ease both; }
+body.admin .chat-bubble time { display: block; margin-top: 5px; color: #87868a; font-size: 8px; text-align: right; }
+body.admin .chat-bubble.outgoing { align-self: flex-end; border-color: rgba(255,102,93,.15); border-radius: 13px 13px 4px 13px; background: linear-gradient(135deg, rgba(255,102,93,.13), rgba(251,22,75,.1)); }
+body.admin .chat-placeholder { display: grid; align-self: center; justify-items: center; gap: 5px; margin: auto 0 0; padding: 10px; color: var(--text-secondary); text-align: center; }
+body.admin .chat-placeholder > span { color: #ff9c65; font-size: 19px; }
+body.admin .chat-placeholder strong { color: #d9d5d4; font-size: 10px; }
+body.admin .chat-placeholder small { font-size: 9px; }
+body.admin .conversation-compose { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; border-top: 1px solid rgba(255,255,255,.07); }
+body.admin .conversation-compose > span { overflow: hidden; color: #85858a; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+body.admin .conversation-compose .btn { min-height: 32px; padding: 6px 10px; font-size: 10px; }
 body.admin .admin-card:nth-child(2) { animation-delay: .12s; }
 body.admin .admin-card:nth-child(3) { animation-delay: .2s; }
 
@@ -851,4 +927,19 @@ body.admin .admin-card:nth-child(3) { animation-delay: .2s; }
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
   }
+}
+
+@media (max-width: 700px) {
+  body.admin .suggestions-admin-header, body.admin .messages-header { align-items: stretch; flex-direction: column; }
+  body.admin .suggestions-toolbar { align-items: stretch; flex-direction: column; }
+  body.admin .suggestions-toolbar .library-field { align-items: stretch; flex-direction: column; }
+  body.admin .suggestion-item { grid-template-columns: 38px minmax(0, 1fr); gap: 10px; }
+  body.admin .suggestion-art { width: 38px; height: 38px; }
+  body.admin .suggestion-info { align-self: center; }
+  body.admin .suggestion-actions { grid-column: 2; flex-wrap: wrap; }
+  body.admin .messages-layout { grid-template-columns: 1fr; }
+  body.admin .messages-list { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.07); }
+  body.admin .messages-empty-list { padding: 20px 10px; }
+  body.admin .messages-empty-list small { max-width: 300px; }
+  body.admin .messages-conversation { min-height: 390px; }
 }

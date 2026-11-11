@@ -6,7 +6,7 @@
   <title>DJ — SANTA MARIA RADIO</title>
   <link rel="icon" type="image/png" href="/assets/logo.png" />
   <link rel="stylesheet" href="/assets/styles.css" />
-  <link rel="stylesheet" href="/assets/workspace.css?v=admin-motion-20261112" />
+  <link rel="stylesheet" href="/assets/workspace.css?v=music-tags-20261112" />
 </head>
 <body class="admin">
   <div class="workspace-shell">
@@ -22,6 +22,8 @@
         <a href="/dj/playlists" data-page="playlists"><span class="nav-icon">♫</span><span>Мои плейлисты</span></a>
         <a href="/dj/library" data-page="library"><span class="nav-icon">▤</span><span>Библиотека</span></a>
         <a href="/dj/upload" data-page="upload"><span class="nav-icon">＋</span><span>Загрузка музыки</span></a>
+        <a href="/dj/suggestions" data-page="suggestions"><span class="nav-icon">♫</span><span>Предложка</span><span class="suggestion-count" id="djSuggestionCount" hidden></span></a>
+        <a href="/dj/messages" data-page="messages"><span class="nav-icon">✉</span><span>Сообщения</span><span class="nav-soon">СКОРО</span></a>
       </nav>
       <div class="sidebar-spacer"></div>
       <a class="sidebar-public-link" href="/" target="_blank" rel="noreferrer">Открыть радио <span>↗</span></a>
@@ -174,17 +176,62 @@
         </form>
       </section>
       </section>
+
+      <section class="workspace-page" data-page="suggestions" hidden>
+        <section class="admin-card suggestions-admin-card">
+          <div class="suggestions-admin-header">
+            <div><span class="eyebrow">ОТ СЛУШАТЕЛЕЙ</span><h2 class="admin-title">Предложка</h2><p class="admin-muted">Послушай трек и реши, достоин ли он попасть в музыкальную библиотеку.</p></div>
+            <button class="btn" id="refreshDjSuggestions" type="button">Обновить список</button>
+          </div>
+          <div class="suggestions-toolbar"><div class="suggestions-summary"><span class="suggestion-summary-icon">♫</span><span><strong id="djSuggestionSummary">Загрузка предложек…</strong><small>Принятые треки попадут в общую библиотеку</small></span></div></div>
+          <div id="djSuggestionMessage" class="admin-msg" role="status" aria-live="polite"></div>
+          <div id="djSuggestionList" class="admin-list suggestions-list" aria-live="polite"></div>
+        </section>
+      </section>
+
+      <section class="workspace-page" data-page="messages" hidden>
+        <section class="admin-card messages-card">
+          <div class="messages-header">
+            <div><span class="eyebrow">DJ INBOX</span><h2 class="admin-title">Сообщения</h2><p class="admin-muted">Будущие сообщения от игроков и слушателей будут собраны здесь.</p></div>
+            <span class="messages-status"><i></i> Подключение позже</span>
+          </div>
+          <div class="messages-layout">
+            <aside class="messages-list"><div class="messages-search">⌕ <span>Поиск по чатам</span></div><div class="messages-empty-list"><span>✦</span><strong>Здесь будут чаты</strong><small>Когда игра начнёт присылать сообщения, они появятся в этом списке.</small></div></aside>
+            <div class="messages-conversation">
+              <div class="conversation-top"><span class="conversation-avatar">✦</span><div><strong>Предпросмотр чата</strong><small>Визуальный макет · сообщения пока не подключены</small></div><span class="demo-badge">ДЕМО</span></div>
+              <div class="conversation-body"><div class="chat-date">ПРИМЕР БУДУЩЕГО ЧАТА</div><div class="chat-bubble incoming">Привет! Можно поставить любимый трек? <time>пример</time></div><div class="chat-bubble outgoing">Привет! Увидел сообщение, спасибо за идею ✨ <time>пример</time></div><div class="chat-placeholder"><span>✉</span><strong>Здесь появится переписка</strong><small>Сейчас это только макет интерфейса.</small></div></div>
+              <div class="conversation-compose"><span>Сообщения появятся после подключения игры</span><button class="btn" type="button" disabled>Отправить</button></div>
+            </div>
+          </div>
+        </section>
+      </section>
         </div>
       </div>
     </main>
   </div>
+  <dialog class="music-tags-dialog" id="musicTagsDialog" aria-labelledby="musicTagsHeading">
+    <form class="music-tags-form" id="musicTagsForm">
+      <div class="music-tags-kicker">МУЗЫКАЛЬНАЯ КОЛЛЕКЦИЯ</div>
+      <h2 id="musicTagsHeading">Теги трека</h2>
+      <p class="music-tags-filename" id="musicTagsFilename"></p>
+      <label class="admin-label" for="musicTagArtist">Исполнитель</label>
+      <input class="admin-input" id="musicTagArtist" name="artist" maxlength="150" autocomplete="off" />
+      <label class="admin-label" for="musicTagTitle">Название</label>
+      <input class="admin-input" id="musicTagTitle" name="title" maxlength="150" autocomplete="off" required />
+      <div class="music-tags-message" id="musicTagsMessage" role="status" aria-live="polite"></div>
+      <div class="music-tags-actions"><button class="btn small" id="cancelMusicTags" type="button">Отмена</button><button class="btn" id="saveMusicTags" type="submit">Сохранить теги</button></div>
+    </form>
+  </dialog>
+
   <script>
     const pageNames = {
       studio: { title: "Студия", description: "Управляйте эфиром, микрофоном и уровнем звука." },
       queue: { title: "Очередь эфира", description: "Настраивайте порядок следующих треков." },
       playlists: { title: "Мои плейлисты", description: "Собирайте и храните свои музыкальные подборки." },
       library: { title: "Библиотека", description: "Находите треки, добавляйте их в плейлисты или очередь эфира." },
-      upload: { title: "Загрузка музыки", description: "Добавляйте новые треки в общую музыкальную библиотеку." }
+      upload: { title: "Загрузка музыки", description: "Добавляйте новые треки в общую музыкальную библиотеку." },
+      suggestions: { title: "Предложка", description: "Проверяй, слушай и принимай треки от слушателей." },
+      messages: { title: "Сообщения", description: "Макет будущих чатов с игроками и слушателями." }
     };
     const requestedPage = location.pathname.split("/").filter(Boolean).pop();
     const currentPage = pageNames[requestedPage] ? requestedPage : "studio";
@@ -563,7 +610,7 @@
       const filtered = musicItems.filter((item) => {
         const extension = item.file.split(".").pop().toLowerCase();
         return (format === "all" || extension === format) &&
-          (!query || item.title.toLocaleLowerCase().includes(query) || item.file.toLocaleLowerCase().includes(query));
+          (!query || item.title.toLocaleLowerCase().includes(query) || item.artist.toLocaleLowerCase().includes(query) || item.file.toLocaleLowerCase().includes(query));
       }).sort((a, b) => {
         let comparison = 0;
         if (sort === "name") comparison = a.title.localeCompare(b.title, "ru", { sensitivity: "base" });
@@ -603,6 +650,7 @@
               </div>
             </div>
             <div class="admin-item-actions library-track-actions">
+              <button class="btn small" data-edit-tags="${escapeHtml(item.file)}">Теги</button>
               <button class="btn small" data-add-playlist="${escapeHtml(item.file)}">В плейлист</button>
               <button class="btn small" data-add-queue="${escapeHtml(item.file)}" ${isOwner && currentSourceMode === "playlist" ? "" : "disabled"}>В очередь эфира</button>
             </div>
@@ -657,9 +705,44 @@
       } catch (error) { notify(error.message, true); }
     });
 
+    const musicTagsDialog = document.getElementById("musicTagsDialog");
+    let editingMusicFile = "";
+    function openMusicTags(file) {
+      const item = musicItems.find((song) => song.file === file);
+      if (!item) return;
+      editingMusicFile = file;
+      document.getElementById("musicTagsFilename").textContent = file;
+      document.getElementById("musicTagArtist").value = item.artist || "";
+      document.getElementById("musicTagTitle").value = item.title || "";
+      document.getElementById("musicTagsMessage").textContent = "";
+      document.getElementById("musicTagsMessage").className = "music-tags-message";
+      musicTagsDialog.showModal();
+    }
+    document.getElementById("cancelMusicTags").addEventListener("click", () => musicTagsDialog.close());
+    document.getElementById("musicTagsForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const saveButton = document.getElementById("saveMusicTags");
+      saveButton.disabled = true;
+      try {
+        const result = await api("/api/dj/music/tags", {
+          method: "PUT", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ file: editingMusicFile, artist: document.getElementById("musicTagArtist").value, title: document.getElementById("musicTagTitle").value })
+        });
+        musicTagsDialog.close();
+        await loadMusic();
+        notify("Теги обновлены в аудиофайле.");
+      } catch (error) {
+        const messages = { tag_update_failed: "Не удалось записать теги в этот файл.", unsupported_audio_type: "Формат файла не поддерживается.", music_file_not_found: "Файл больше не найден." };
+        const message = messages[error.message] || error.message;
+        document.getElementById("musicTagsMessage").textContent = message;
+        document.getElementById("musicTagsMessage").className = "music-tags-message is-error";
+      } finally { saveButton.disabled = false; }
+    });
+
     musicList.addEventListener("click", async (event) => {
       const button = event.target?.closest?.("button");
       if (!button) return;
+      if (button.dataset.editTags) { openMusicTags(button.dataset.editTags); return; }
       try {
         if (button.dataset.addPlaylist) {
           if (!playlistSelect.value) throw new Error("Сначала выберите плейлист.");
@@ -799,11 +882,52 @@
       location.assign("/login");
     });
 
+    const djSuggestionList = document.getElementById("djSuggestionList");
+    async function loadDjSuggestions() {
+      if (!djSuggestionList) return;
+      djSuggestionList.innerHTML = '<div class="library-empty">Загружаем предложенные треки…</div>';
+      try {
+        const result = await api("/api/dj/suggestions");
+        const items = Array.isArray(result.items) ? result.items : [];
+        const count = document.getElementById("djSuggestionCount");
+        count.textContent = String(items.length);
+        count.hidden = items.length === 0;
+        document.getElementById("djSuggestionSummary").textContent = items.length ? `На проверке: ${items.length}` : "Новых предложек пока нет";
+        djSuggestionList.innerHTML = items.length ? items.map((item) => {
+          const trackName = [item.artist, item.title].filter(Boolean).join(" — ") || item.filename;
+          const date = new Date(item.createdAt);
+          const submitted = Number.isNaN(date.getTime()) ? "" : date.toLocaleString("ru-RU", { dateStyle: "medium", timeStyle: "short" });
+          return `<article class="admin-item suggestion-item"><div class="suggestion-art">♫</div><div class="suggestion-info"><div class="suggestion-title-row"><h3>${escapeHtml(trackName)}</h3><span class="suggestion-status is-pending">На проверке</span></div><div class="suggestion-meta"><strong class="suggestion-nickname">От: ${escapeHtml(item.nickname || "Без никнейма")}</strong><span>${escapeHtml(item.filename)}</span><time>${escapeHtml(submitted)}</time></div><audio class="suggestion-audio" controls preload="none" src="/api/dj/suggestions/${encodeURIComponent(item.id)}/audio">Ваш браузер не поддерживает аудио.</audio></div><div class="suggestion-actions"><button class="btn small suggestion-approve" data-dj-suggestion-id="${escapeHtml(item.id)}" data-decision="approved">Принять</button><button class="btn small danger" data-dj-suggestion-id="${escapeHtml(item.id)}" data-decision="rejected">Отклонить</button></div></article>`;
+        }).join("") : '<div class="suggestions-empty"><span>✦</span><strong>Все треки проверены</strong><small>Новые предложения появятся здесь, когда слушатели отправят музыку.</small></div>';
+      } catch (error) {
+        djSuggestionList.innerHTML = '<div class="library-empty">Не удалось загрузить список. Попробуй обновить страницу.</div>';
+        notify(error.message || "Ошибка загрузки предложек", true);
+      }
+    }
+    document.getElementById("refreshDjSuggestions")?.addEventListener("click", loadDjSuggestions);
+    djSuggestionList?.addEventListener("click", async (event) => {
+      const button = event.target?.closest?.("button[data-dj-suggestion-id]");
+      if (!button) return;
+      button.disabled = true;
+      try {
+        const result = await api(`/api/dj/suggestions/${encodeURIComponent(button.dataset.djSuggestionId)}`, {
+          method: "PATCH", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ decision: button.dataset.decision })
+        });
+        notify(result.status === "approved" ? "Трек принят и добавлен в общую библиотеку." : "Трек отклонён.");
+        await loadDjSuggestions();
+      } catch (error) {
+        notify(error.message || "Не удалось сохранить решение", true);
+        button.disabled = false;
+      }
+    });
+
     Promise.all([
       loadIdentity(),
       loadPlaylists(),
       loadStatus(),
-      currentPage === "library" ? loadMusic() : Promise.resolve()
+      currentPage === "library" ? loadMusic() : Promise.resolve(),
+      currentPage === "suggestions" ? loadDjSuggestions() : Promise.resolve()
     ])
       .catch((error) => notify(error.message, true));
     setInterval(() => loadStatus().catch((error) => notify(error.message, true)), 2000);

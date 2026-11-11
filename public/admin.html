@@ -6,7 +6,7 @@
   <title>SANTA MARIA RADIO — Admin</title>
   <link rel="icon" type="image/png" href="/assets/logo.png" />
   <link rel="stylesheet" href="/assets/styles.css" />
-  <link rel="stylesheet" href="/assets/workspace.css?v=admin-motion-20261112" />
+  <link rel="stylesheet" href="/assets/workspace.css?v=music-tags-20261112" />
 </head>
 <body class="admin">
   <div class="workspace-shell">
@@ -20,6 +20,7 @@
         <a href="/admin/djs" data-page="djs"><span class="nav-icon">DJ</span><span>Диджеи</span></a>
         <a href="/admin/music" data-page="music"><span class="nav-icon">♫</span><span>Библиотека</span></a>
         <a href="/admin/uploads" data-page="uploads"><span class="nav-icon">＋</span><span>Загрузка</span></a>
+        <a href="/admin/suggestions" data-page="suggestions"><span class="nav-icon">♫</span><span>Предложки</span><span class="suggestion-count" id="suggestionCount">…</span></a>
         <a href="/admin/services" data-page="services"><span class="nav-icon">◉</span><span>Службы</span></a>
       </nav>
       <div class="sidebar-spacer"></div>
@@ -173,16 +174,43 @@
         <div id="libraryMsg" class="admin-msg" role="status" aria-live="polite"></div>
       </div>
       </section>
+
+      <section class="workspace-page" data-page="suggestions" hidden>
+        <section class="admin-card suggestions-admin-card">
+          <div class="suggestions-admin-header">
+            <div><span class="eyebrow">ОТ СЛУШАТЕЛЕЙ</span><h2 class="admin-title">Предложенные треки</h2><p class="admin-muted">Проверь аудиофайл и реши, попадёт ли он в общую музыкальную библиотеку.</p></div>
+            <button class="btn" id="refreshSuggestions" type="button">Обновить</button>
+          </div>
+          <div class="suggestions-toolbar"><div class="suggestions-summary"><span class="suggestion-summary-icon">♫</span><span><strong id="suggestionSummary">Загрузка предложек…</strong><small>Одобрение добавляет файл в библиотеку</small></span></div><label class="library-field" for="suggestionFilter"><span>Показать</span><select class="admin-input" id="suggestionFilter"><option value="pending">На проверке</option><option value="approved">Принятые</option><option value="rejected">Отклонённые</option><option value="all">Все</option></select></label></div>
+          <div id="suggestionMessage" class="admin-msg" role="status" aria-live="polite"></div>
+          <div id="suggestionList" class="admin-list suggestions-list" aria-live="polite"></div>
+        </section>
+      </section>
         </div>
       </div>
     </main>
   </div>
+
+  <dialog class="music-tags-dialog" id="songTagsDialog" aria-labelledby="songTagsHeading">
+    <form class="music-tags-form" id="songTagsForm">
+      <div class="music-tags-kicker">МУЗЫКАЛЬНАЯ КОЛЛЕКЦИЯ</div>
+      <h2 id="songTagsHeading">Теги трека</h2>
+      <p class="music-tags-filename" id="songTagsFilename"></p>
+      <label class="admin-label" for="songTagArtist">Исполнитель</label>
+      <input class="admin-input" id="songTagArtist" name="artist" maxlength="150" autocomplete="off" />
+      <label class="admin-label" for="songTagTitle">Название</label>
+      <input class="admin-input" id="songTagTitle" name="title" maxlength="150" autocomplete="off" required />
+      <div class="music-tags-message" id="songTagsMessage" role="status" aria-live="polite"></div>
+      <div class="music-tags-actions"><button class="btn small" id="cancelSongTags" type="button">Отмена</button><button class="btn" id="saveSongTags" type="submit">Сохранить теги</button></div>
+    </form>
+  </dialog>
 
   <script>
     const pageNames = {
       djs: { title: "Диджеи", description: "Создавайте аккаунты и управляйте доступом к эфиру." },
       music: { title: "Библиотека", description: "Поиск по музыкальной коллекции и управление очередью AutoDJ." },
       uploads: { title: "Загрузка", description: "Добавляйте музыку и джинглы в эфирную коллекцию." },
+      suggestions: { title: "Предложенные треки", description: "Проверяйте музыку от слушателей и решайте, что попадёт в эфирную библиотеку." },
       services: { title: "Службы", description: "Состояние и управление компонентами радиостанции." }
     };
     const requestedPage = location.pathname.split("/").filter(Boolean).pop();
@@ -432,7 +460,7 @@
       return songs.filter((song) => {
         const extension = song.file.split(".").pop().toLowerCase();
         return (format === "all" || extension === format) &&
-          (!term || song.title.toLocaleLowerCase().includes(term) || song.file.toLocaleLowerCase().includes(term));
+          (!term || song.title.toLocaleLowerCase().includes(term) || song.artist.toLocaleLowerCase().includes(term) || song.file.toLocaleLowerCase().includes(term));
       }).sort((a, b) => {
         let comparison = 0;
         if (sort === "name") comparison = a.title.localeCompare(b.title, "ru", { sensitivity: "base" });
@@ -466,7 +494,7 @@
           <article class="admin-item library-track">
             <div class="library-track-info">
               <div class="library-track-heading">
-                <h3 class="admin-item-title">${escapeHtml(it.title)}</h3>
+                <div><h3 class="admin-item-title">${escapeHtml(it.title)}</h3>${it.artist ? `<div class="library-track-artist">${escapeHtml(it.artist)}</div>` : ""}</div>
                 <span class="library-format">${escapeHtml(extension)}</span>
               </div>
               <div class="admin-item-meta library-track-meta">
@@ -478,6 +506,7 @@
             <div class="admin-item-actions library-track-actions">
               <button class="btn small" data-action="next" data-file="${escapeHtml(it.file)}">Следующим</button>
               <button class="btn small" data-action="queue" data-file="${escapeHtml(it.file)}">В очередь</button>
+              <button class="btn small" data-action="tags" data-file="${escapeHtml(it.file)}">Теги</button>
               <button class="btn small danger" data-action="delete" data-file="${escapeHtml(it.file)}">Удалить</button>
             </div>
           </article>
@@ -535,9 +564,46 @@
       }
     }
 
+    const songTagsDialog = document.getElementById("songTagsDialog");
+    const songTagsForm = document.getElementById("songTagsForm");
+    let editingSongFile = "";
+    function openSongTags(file) {
+      const song = songs.find((item) => item.file === file);
+      if (!song) return;
+      editingSongFile = file;
+      document.getElementById("songTagsFilename").textContent = file;
+      document.getElementById("songTagArtist").value = song.artist || "";
+      document.getElementById("songTagTitle").value = song.title || "";
+      document.getElementById("songTagsMessage").textContent = "";
+      songTagsDialog.showModal();
+    }
+    document.getElementById("cancelSongTags").addEventListener("click", () => songTagsDialog.close());
+    songTagsForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const saveButton = document.getElementById("saveSongTags");
+      saveButton.disabled = true;
+      try {
+        const response = await fetch("/api/admin/music/tags", {
+          method: "PUT", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ file: editingSongFile, artist: document.getElementById("songTagArtist").value, title: document.getElementById("songTagTitle").value })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Не удалось сохранить теги.");
+        songTagsDialog.close();
+        await loadSongs();
+        libraryMsg.textContent = "Теги обновлены в аудиофайле.";
+        libraryMsg.className = "admin-msg ok";
+      } catch (error) {
+        const messages = { tag_update_failed: "Не удалось записать теги в этот файл.", unsupported_audio_type: "Формат файла не поддерживается.", music_file_not_found: "Файл больше не найден." };
+        document.getElementById("songTagsMessage").textContent = messages[error.message] || error.message;
+        document.getElementById("songTagsMessage").className = "music-tags-message is-error";
+      } finally { saveButton.disabled = false; }
+    });
+
     songList?.addEventListener("click", (e) => {
       const btn = e.target?.closest?.("button");
       if (!btn) return;
+      if (btn.dataset.action === "tags") { openSongTags(btn.dataset.file); return; }
       action(btn.dataset.file, btn.dataset.action);
     });
 
@@ -568,9 +634,65 @@
 
     refreshBtn?.addEventListener("click", loadSongs);
 
+    const suggestionList = document.getElementById("suggestionList");
+    const suggestionFilter = document.getElementById("suggestionFilter");
+    const suggestionMessage = document.getElementById("suggestionMessage");
+    const suggestionSummary = document.getElementById("suggestionSummary");
+    const suggestionCount = document.getElementById("suggestionCount");
+    function formatSuggestionDate(value) {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? "Дата неизвестна" : date.toLocaleString("ru-RU", { dateStyle: "medium", timeStyle: "short" });
+    }
+    async function loadSuggestions() {
+      if (!suggestionList) return;
+      suggestionList.innerHTML = '<div class="library-empty">Загружаем список…</div>';
+      try {
+        const [selected, pending] = await Promise.all([
+          fetch(`/api/admin/suggestions?status=${encodeURIComponent(suggestionFilter.value)}`, { cache: "no-store" }).then(async (r) => { const d = await r.json(); if (!r.ok) throw new Error(d.error); return d; }),
+          fetch("/api/admin/suggestions?status=pending", { cache: "no-store" }).then(async (r) => { const d = await r.json(); if (!r.ok) throw new Error(d.error); return d; })
+        ]);
+        const items = Array.isArray(selected.items) ? selected.items : [];
+        suggestionCount.textContent = String(pending.items.length);
+        suggestionCount.hidden = pending.items.length === 0;
+        suggestionSummary.textContent = pending.items.length ? `На проверке: ${pending.items.length}` : "Новых предложек пока нет";
+        suggestionList.innerHTML = items.length ? items.map((item) => {
+          const label = [item.artist, item.title].filter(Boolean).join(" — ") || item.filename;
+          const statusLabel = { pending: "На проверке", approved: "Принят", rejected: "Отклонён" }[item.status] || item.status;
+          return `<article class="admin-item suggestion-item"><div class="suggestion-art">♫</div><div class="suggestion-info"><div class="suggestion-title-row"><h3>${escapeHtml(label)}</h3><span class="suggestion-status is-${escapeHtml(item.status)}">${statusLabel}</span></div><div class="suggestion-meta"><strong class="suggestion-nickname">От: ${escapeHtml(item.nickname || "Без никнейма")}</strong><span>${escapeHtml(item.filename)}</span><time>${escapeHtml(formatSuggestionDate(item.createdAt))}</time></div>${item.status === "pending" ? `<audio class="suggestion-audio" controls preload="none" src="/api/admin/suggestions/${encodeURIComponent(item.id)}/audio">Ваш браузер не поддерживает аудио.</audio>` : ""}</div><div class="suggestion-actions">${item.status === "pending" ? `<button class="btn small suggestion-approve" data-suggestion-id="${escapeHtml(item.id)}" data-decision="approved">Принять</button><button class="btn small danger" data-suggestion-id="${escapeHtml(item.id)}" data-decision="rejected">Отклонить</button>` : ""}${item.status === "approved" ? '<span class="suggestion-library-note">Добавлен в библиотеку</span>' : ""}</div></article>`;
+        }).join("") : '<div class="suggestions-empty"><span>✦</span><strong>Здесь пока пусто</strong><small>Новые предложения появятся в этом списке.</small></div>';
+      } catch (error) {
+        suggestionList.innerHTML = '<div class="library-empty">Не удалось загрузить предложки. Обнови страницу.</div>';
+        suggestionMessage.textContent = error.message || "Ошибка загрузки";
+        suggestionMessage.className = "admin-msg err";
+      }
+    }
+    document.getElementById("refreshSuggestions")?.addEventListener("click", loadSuggestions);
+    suggestionFilter?.addEventListener("change", loadSuggestions);
+    suggestionList?.addEventListener("click", async (event) => {
+      const button = event.target?.closest?.("button[data-suggestion-id]");
+      if (!button) return;
+      button.disabled = true;
+      try {
+        const response = await fetch(`/api/admin/suggestions/${encodeURIComponent(button.dataset.suggestionId)}`, {
+          method: "PATCH", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ decision: button.dataset.decision })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Не удалось сохранить решение");
+        suggestionMessage.textContent = result.status === "approved" ? "Трек принят и добавлен в библиотеку." : "Трек отклонён.";
+        suggestionMessage.className = "admin-msg ok";
+        await loadSuggestions();
+      } catch (error) {
+        suggestionMessage.textContent = error.message || "Не удалось сохранить решение";
+        suggestionMessage.className = "admin-msg err";
+        button.disabled = false;
+      }
+    });
+
     if (currentPage === "djs") loadDjs();
     if (currentPage === "music") loadSongs();
     if (currentPage === "services") loadServices();
+    loadSuggestions();
   </script>
 </body>
 </html>

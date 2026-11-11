@@ -7,7 +7,7 @@
   <title>SANTA MARIA RADIO</title>
   <link rel="icon" type="image/png" href="/assets/logo.png" />
   <link rel="stylesheet" href="/assets/styles.css" />
-  <link rel="stylesheet" href="/assets/public-theme.css?v=20261112-volume-percent" />
+  <link rel="stylesheet" href="/assets/public-theme.css?v=suggestion-module-20261112" />
 </head>
 <body>
   <div class="topbar">
@@ -73,6 +73,26 @@
         </div>
       </div>
     </section>
+
+    <dialog class="suggestion-dialog" id="suggestionDialog" aria-labelledby="suggestionTitle">
+      <form class="suggestion-form" id="suggestionForm">
+        <button class="suggestion-close" id="closeSuggestion" type="button" aria-label="Закрыть">×</button>
+        <span class="suggestion-kicker">SANTA MARIA RADIO · ТВОЙ ВЫБОР</span>
+        <h2 id="suggestionTitle">Предложи трек</h2>
+        <p>Пришли любимую музыку — мы проверим её и добавим в эфир, если она подойдёт.</p>
+        <label for="suggestNickname">Твой никнейм</label>
+        <input id="suggestNickname" name="nickname" minlength="2" maxlength="32" autocomplete="nickname" placeholder="Как к тебе обращаться?" required />
+        <label for="suggestArtist">Исполнитель <span>необязательно</span></label>
+        <input id="suggestArtist" name="artist" maxlength="100" placeholder="Например, Моя Мишель" />
+        <label for="suggestTitle">Название <span>необязательно</span></label>
+        <input id="suggestTitle" name="title" maxlength="100" placeholder="Название трека" />
+        <label class="suggestion-file" for="suggestFile"><span class="suggestion-file-icon">♫</span><span><strong id="suggestFileName">Выбери аудиофайл</strong><small>MP3, WAV, OGG или FLAC</small></span><span class="suggestion-file-action">Обзор</span></label>
+        <input class="suggestion-file-input" id="suggestFile" name="file" type="file" accept=".mp3,.wav,.ogg,.flac,audio/mpeg,audio/wav,audio/ogg,audio/flac" required />
+        <div class="suggestion-feedback" id="suggestionFeedback" role="status" aria-live="polite"></div>
+        <button class="suggestion-submit" id="submitSuggestion" type="submit"><span>Отправить на проверку</span><span>↗</span></button>
+        <small class="suggestion-footnote">Отправляя трек, ты подтверждаешь, что имеешь право им поделиться.</small>
+      </form>
+    </dialog>
 
     <section class="section">
       <div class="wrap">
@@ -364,8 +384,45 @@
       }
     });
 
+    const suggestionDialog = document.getElementById("suggestionDialog");
+    const suggestionForm = document.getElementById("suggestionForm");
+    const suggestionFeedback = document.getElementById("suggestionFeedback");
+    const suggestionFile = document.getElementById("suggestFile");
     suggestBtn.addEventListener("click", () => {
-      showToast("Скоро: форма предложений");
+      suggestionFeedback.textContent = "";
+      suggestionFeedback.className = "suggestion-feedback";
+      suggestionDialog.showModal();
+    });
+    document.getElementById("closeSuggestion").addEventListener("click", () => suggestionDialog.close());
+    suggestionDialog.addEventListener("click", (event) => {
+      if (event.target === suggestionDialog) suggestionDialog.close();
+    });
+    suggestionFile.addEventListener("change", () => {
+      document.getElementById("suggestFileName").textContent = suggestionFile.files?.[0]?.name || "Выбери аудиофайл";
+    });
+    suggestionForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const submit = document.getElementById("submitSuggestion");
+      submit.disabled = true;
+      submit.classList.add("is-loading");
+      suggestionFeedback.textContent = "Загружаем трек…";
+      try {
+        const response = await fetch("/api/suggestions", { method: "POST", body: new FormData(suggestionForm) });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Не удалось отправить трек.");
+        suggestionFeedback.textContent = "Готово! Трек отправлен команде на проверку.";
+        suggestionFeedback.classList.add("is-success");
+        suggestionForm.reset();
+        document.getElementById("suggestFileName").textContent = "Выбери аудиофайл";
+        setTimeout(() => suggestionDialog.close(), 1300);
+      } catch (error) {
+        const messages = { suggestion_rate_limited: "Подожди пять минут перед следующей отправкой.", invalid_suggestion: "Проверь формат и размер файла.", file_required: "Выбери аудиофайл.", nickname_required: "Введи никнейм длиной от 2 до 32 символов." };
+        suggestionFeedback.textContent = messages[error.message] || "Не удалось отправить трек. Попробуй ещё раз.";
+        suggestionFeedback.classList.add("is-error");
+      } finally {
+        submit.disabled = false;
+        submit.classList.remove("is-loading");
+      }
     });
 
     setStatus("paused");

@@ -26,7 +26,7 @@ export async function authRoutes(app: FastifyInstance) {
     const user = await authenticate(request);
     if (!user) return reply.redirect('/login');
     if (user.role !== 'superadmin') return reply.redirect('/dj');
-    if (page && !['djs', 'music', 'uploads', 'services'].includes(page)) {
+    if (page && !['djs', 'music', 'uploads', 'services', 'suggestions'].includes(page)) {
       return reply.code(404).send({ ok: false, error: 'page_not_found' });
     }
     return reply.sendFile('admin.html');
@@ -35,7 +35,7 @@ export async function authRoutes(app: FastifyInstance) {
     const user = await authenticate(request);
     if (!user) return reply.redirect('/login');
     if (user.role !== 'dj') return reply.redirect('/admin');
-    if (page && !['studio', 'queue', 'playlists', 'library', 'upload'].includes(page)) {
+    if (page && !['studio', 'queue', 'playlists', 'library', 'upload', 'messages', 'suggestions'].includes(page)) {
       return reply.code(404).send({ ok: false, error: 'page_not_found' });
     }
     return reply.sendFile('dj.html');
