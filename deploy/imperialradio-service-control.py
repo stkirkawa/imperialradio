@@ -1,59 +1,86 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
+"""Systemd socket-activated, allowlisted radio service restart helper.
+
+Install root-owned (0755). Only the application's Unix socket owner and root
+can connect. The request cannot select a shell command or an arbitrary unit.
+"""
 import json
+import os
+import pwd
+import socket
+import struct
 import subprocess
-import sys
 
-
-SERVICES = {
-    "liquidsoap": "imperialradio-liquidsoap.service",
-    "icecast": "icecast2.service",
-    "mediamtx": "mediamtx.service",
+UNITS = {
+    'liquidsoap': 'imperialradio-liquidsoap.service',
+    'icecast': 'icecast2.service',
+    'mediamtx': 'mediamtx.service',
 }
+SYSTEMCTL = '/usr/bin/systemctl'
+MAX_MESSAGE = 1024
 
 
-def respond(payload):
-    print(json.dumps(payload), flush=True)
+def run_service_command(service):
+    if not isinstance(service, str) or service not in UNITS:
+        return {'ok': False, 'error': 'Invalid service'}
+    unit = UNITS[service]
+    try:
+        subprocess.run([SYSTEMCTL, 'restart', '--', unit], check=True,
+                       capture_output=True, text=True, timeout=35)
+        result = subprocess.run([SYSTEMCTL, 'show', '--property=ActiveState',
+                                 '--value', '--', unit], check=True,
+                                capture_output=True, text=True, timeout=5)
+        return {'ok': True, 'status': result.stdout.strip()}
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return {'ok': False, 'error': 'Service restart failed'}
 
 
-request_line = sys.stdin.readline(256)
-try:
-    request = json.loads(request_line)
-except json.JSONDecodeError:
-    respond({"ok": False, "error": "invalid_request"})
-    sys.exit(0)
+def receive_request(conn):
+    message = bytearray()
+    while len(message) <= MAX_MESSAGE:
+        chunk = conn.recv(min(1024, MAX_MESSAGE + 1 - len(message)))
+        if not chunk:
+            break
+        message.extend(chunk)
+        if b'\n' in chunk:
+            break
+    if len(message) > MAX_MESSAGE or b'\n' not in message:
+        return {'ok': False, 'error': 'Invalid request'}
+    try:
+        data = json.loads(bytes(message).split(b'\n', 1)[0])
+    except (UnicodeDecodeError, ValueError):
+        return {'ok': False, 'error': 'Invalid JSON'}
+    if not isinstance(data, dict) or set(data) != {'service'}:
+        return {'ok': False, 'error': 'Invalid request'}
+    return run_service_command(data['service'])
 
-service_id = request.get("service") if isinstance(request, dict) else None
-unit = SERVICES.get(service_id) if isinstance(service_id, str) else None
-if unit is None:
-    respond({"ok": False, "error": "invalid_service"})
-    sys.exit(0)
 
-try:
-    subprocess.run(
-        ["/usr/bin/systemctl", "restart", unit],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=40,
-    )
-    status = subprocess.run(
-        ["/usr/bin/systemctl", "show", "--property=ActiveState", "--value", unit],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=5,
-    ).stdout.strip()
-except subprocess.TimeoutExpired as error:
-    print(f"Service operation timed out: {error}", file=sys.stderr, flush=True)
-    respond({"ok": False, "error": "service_restart_failed"})
-    sys.exit(0)
-except subprocess.CalledProcessError as error:
-    print(error.stderr.strip(), file=sys.stderr, flush=True)
-    respond({"ok": False, "error": "service_restart_failed"})
-    sys.exit(0)
+def main():
+    # Socket permissions already enforce the authorized service identity.
+    # SO_PEERCRED also rejects requests arriving from an unexpectedly shared FD.
+    app_user = os.environ.get('IMPERIALRADIO_APP_USER', 'imperialradio')
+    app_uid = pwd.getpwnam(app_user).pw_uid
+    if int(os.environ.get('LISTEN_PID', '0')) != os.getpid() or int(os.environ.get('LISTEN_FDS', '0')) != 1:
+        raise SystemExit('Must be activated by the systemd socket unit')
+    listener = socket.socket(fileno=3)
+    while True:
+        conn, _ = listener.accept()
+        with conn:
+            try:
+                conn.settimeout(45)
+                peer_cred = conn.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12)
+                _pid, uid, _gid = struct.unpack('3i', peer_cred)
+                if uid not in (0, app_uid):
+                    result = {'ok': False, 'error': 'Unauthorized'}
+                else:
+                    result = receive_request(conn)
+            except (OSError, UnicodeError, ValueError):
+                result = {'ok': False, 'error': 'Invalid request'}
+            try:
+                conn.sendall((json.dumps(result, separators=(',', ':')) + '\n').encode('utf-8'))
+            except OSError:
+                pass
 
-if status != "active":
-    respond({"ok": False, "error": "service_not_active"})
-    sys.exit(0)
 
-respond({"ok": True, "status": status})
+if __name__ == '__main__':
+    main()

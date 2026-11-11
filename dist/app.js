@@ -10,7 +10,7 @@ import { adminRoutes } from './routes/admin.routes.js';
 import { authRoutes } from './routes/auth.routes.js';
 import { djRoutes } from './routes/dj.routes.js';
 import { ensureDir } from './services/upload.service.js';
-import { initializeRadioStore } from './services/radioStore.service.js';
+import { closeRadioStore, initializeRadioStore } from './services/radioStore.service.js';
 import { clearDjQueue, startDjQueueMonitor } from './services/musicLibrary.service.js';
 import { stopAllMediaRelays } from './services/mediaGateway.service.js';
 import { closeIcecastIngest } from './services/icecastIngest.service.js';
@@ -19,6 +19,21 @@ export async function buildApp() {
         logger: { level: env.LOG_LEVEL },
         disableRequestLogging: true,
         trustProxy: ['127.0.0.1', '::1']
+    });
+    app.addHook('onRequest', async (request, reply) => {
+        reply.header('X-Content-Type-Options', 'nosniff');
+        reply.header('X-Frame-Options', 'DENY');
+        reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+        // Guard older @fastify/busboy from oversized multipart boundaries before
+        // its vulnerable streaming search can run. RFC 2046 limits it to 70 chars.
+        const contentType = request.headers['content-type'];
+        if (contentType && /^multipart\/form-data(?:\s*;|$)/i.test(contentType)) {
+            const match = /(?:^|;)\s*boundary\s*=\s*(?:"([^"]*)"|([^;\s]*))/i.exec(contentType);
+            const boundary = match?.[1] ?? match?.[2];
+            if (boundary && boundary.length > 70) {
+                return reply.code(400).send({ ok: false, error: 'invalid_multipart_boundary' });
+            }
+        }
     });
     await app.register(multipart, {
         limits: {
@@ -52,6 +67,7 @@ export async function buildApp() {
         stopDjQueueMonitor();
         await stopAllMediaRelays();
         await closeIcecastIngest();
+        closeRadioStore();
     });
     return app;
 }

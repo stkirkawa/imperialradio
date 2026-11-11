@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
@@ -150,9 +150,24 @@
     }
 
     function renderHistory() {
-      historyEl.innerHTML = history.map(h => `
-        <div class="item"><div class="tline"><div class="art" aria-hidden="true"></div><strong>${h.title}</strong></div><span>${h.time}</span></div>
-      `).join("");
+      const fragment = document.createDocumentFragment();
+      for (const { title, time } of history) {
+        const item = document.createElement("div");
+        item.className = "item";
+        const line = document.createElement("div");
+        line.className = "tline";
+        const art = document.createElement("div");
+        art.className = "art";
+        art.setAttribute("aria-hidden", "true");
+        const label = document.createElement("strong");
+        label.textContent = title;
+        const timestamp = document.createElement("span");
+        timestamp.textContent = time;
+        line.append(art, label);
+        item.append(line, timestamp);
+        fragment.append(item);
+      }
+      historyEl.replaceChildren(fragment);
     }
 
     function pushHistory(title) {

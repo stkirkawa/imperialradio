@@ -6,19 +6,17 @@ export type LiquidsoapResponse = {
   ok: boolean;
 };
 
-const END_RE = /\r?\nEND\r?\n/;
+const END_RE = /(?:^|\r?\n)END\r?\n/;
 
 export async function sendLiquidsoapCommand(command: string, timeoutMs = 4000): Promise<LiquidsoapResponse> {
   return new Promise((resolve, reject) => {
     const socket = net.createConnection({ host: env.LIQUIDSOAP_HOST, port: env.LIQUIDSOAP_PORT });
     let buffer = '';
     let done = false;
-    let idleTimer: NodeJS.Timeout | undefined;
 
     const finish = (err?: Error) => {
       if (done) return;
       done = true;
-      if (idleTimer) clearTimeout(idleTimer);
       socket.destroy();
       if (err) return reject(err);
       const lines = buffer.split(/\r?\n/).filter((l) => l.trim() && l.trim() !== 'END');
@@ -33,9 +31,8 @@ export async function sendLiquidsoapCommand(command: string, timeoutMs = 4000): 
     socket.on('error', (err) => finish(err));
     socket.on('data', (chunk) => {
       buffer += chunk;
+      if (buffer.length > 64 * 1024) return finish(new Error('Liquidsoap response too large'));
       if (END_RE.test(buffer)) return finish();
-      if (idleTimer) clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => finish(), 300);
     });
 
     socket.on('connect', () => {

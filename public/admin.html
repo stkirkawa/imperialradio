@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
@@ -258,7 +258,11 @@
 
     function renderArtistList() {
       const list = readArtists();
-      artistList.innerHTML = list.map((a) => `<option value="${a}"></option>`).join("");
+      artistList.replaceChildren(...list.map((artist) => {
+        const option = document.createElement("option");
+        option.value = artist;
+        return option;
+      }));
     }
 
     if (artistList) renderArtistList();

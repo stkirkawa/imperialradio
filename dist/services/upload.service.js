@@ -31,7 +31,20 @@ export async function saveUpload(part, destDir, allowedExts, meta) {
     }
     await ensureDir(destDir);
     const writeStream = fs.createWriteStream(targetPath, { flags: 'wx' });
-    await pipeline(part.file, writeStream);
-    const stats = await fsp.stat(targetPath);
-    return { filename: finalName, size: stats.size };
+    try {
+        await pipeline(part.file, writeStream);
+        // Multipart streams can finish successfully after the configured size limit.
+        // Never publish a truncated audio file as a valid upload.
+        if (part.file.truncated)
+            throw new Error('Upload exceeds the maximum allowed size');
+        const stats = await fsp.stat(targetPath);
+        return { filename: finalName, size: stats.size };
+    }
+    catch (error) {
+        await fsp.unlink(targetPath).catch((cleanupError) => {
+            if (cleanupError.code !== 'ENOENT')
+                throw cleanupError;
+        });
+        throw error;
+    }
 }

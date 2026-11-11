@@ -77,23 +77,32 @@ function handleSource(request: import('node:http').IncomingMessage, response: im
   });
   upstream.once('connect', () => {
     const internalAuthorization = Buffer.from(`source:${env.LIVE_INGRESS_PASSWORD}`).toString('base64');
+    const contentType = request.headers['content-type'];
+    const safeType = typeof contentType === 'string' && /^[a-zA-Z0-9.+-]+\/[a-zA-Z0-9.+-]+$/.test(contentType)
+      ? contentType : 'audio/mpeg';
     const headers = [
       'SOURCE /dj-live HTTP/1.0',
       `Authorization: Basic ${internalAuthorization}`,
-      `Content-Type: ${request.headers['content-type'] || 'audio/mpeg'}`,
+      `Content-Type: ${safeType}`,
       'User-Agent: Imperial Radio source relay'
     ];
-    if (request.headers['icy-metadata']) headers.push(`icy-metadata: ${request.headers['icy-metadata']}`);
+    if (request.headers['icy-metadata'] === '1') headers.push('icy-metadata: 1');
     upstream.write(`${headers.join('\r\n')}\r\n\r\n`);
   });
-  upstream.once('data', function handleHarborResponse(data) {
-    const headerEnd = data.indexOf('\r\n\r\n');
-    if (headerEnd < 0) {
-      upstream.destroy(new Error('Invalid response from Liquidsoap harbor'));
+  let responseHeader = Buffer.alloc(0);
+  const handleHarborResponse = (data: Buffer) => {
+    // TCP can fragment a valid HTTP status line and headers across packets.
+    responseHeader = Buffer.concat([responseHeader, data]);
+    const headerEnd = responseHeader.indexOf('\r\n\r\n');
+    if ((headerEnd < 0 && responseHeader.length > 64 * 1024) || headerEnd > 64 * 1024) {
+      upstream.destroy(new Error('Liquidsoap harbor response headers too large'));
       return;
     }
+    if (headerEnd < 0) return;
+    upstream.removeListener('data', handleHarborResponse);
+    upstream.pause(); // Wait until FFmpeg and the response pipe are ready.
 
-    const lines = data.subarray(0, headerEnd).toString('latin1').split('\r\n');
+    const lines = responseHeader.subarray(0, headerEnd).toString('latin1').split('\r\n');
     const status = /^HTTP\/\d(?:\.\d)?\s+(\d{3})(?:\s+(.*))?$/.exec(lines[0] || '');
     if (!status) {
       upstream.destroy(new Error('Invalid status from Liquidsoap harbor'));
@@ -181,14 +190,15 @@ function handleSource(request: import('node:http').IncomingMessage, response: im
       }
 
       response.writeHead(statusCode, responseHeaders);
-      const initialAudio = data.subarray(headerEnd + 4);
+      const initialAudio = responseHeader.subarray(headerEnd + 4);
       if (initialAudio.length) response.write(initialAudio);
       upstream.setTimeout(0);
       request.pipe(input);
       output.pipe(upstream);
       upstream.pipe(response);
     });
-  });
+  };
+  upstream.on('data', handleHarborResponse);
   upstream.on('error', (error) => {
     logger?.error({ err: error, mediaPath }, 'Icecast DJ source relay failed');
     stopTranscoder();

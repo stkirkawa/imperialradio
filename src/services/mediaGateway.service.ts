@@ -4,9 +4,23 @@ import { env } from '../config/env.js';
 import { getRadioStore } from './radioStore.service.js';
 
 const relays = new Map<string, ChildProcess>();
+const starting = new Map<string, Promise<void>>();
 const stopping = new Set<string>();
 
 export async function startMediaRelay(mediaPath: string, logger: FastifyBaseLogger): Promise<void> {
+  const existing = starting.get(mediaPath);
+  if (existing) return existing;
+  if (relays.has(mediaPath)) return;
+  const pending = launchMediaRelay(mediaPath, logger);
+  starting.set(mediaPath, pending);
+  try {
+    await pending;
+  } finally {
+    if (starting.get(mediaPath) === pending) starting.delete(mediaPath);
+  }
+}
+
+async function launchMediaRelay(mediaPath: string, logger: FastifyBaseLogger): Promise<void> {
   if (!/^dj-[A-Za-z0-9_-]{20,64}$/.test(mediaPath)) throw new Error('Invalid media path');
   const onAir = getRadioStore().getOnAir();
   const isLiveSource = onAir?.mediaPath === mediaPath && ['rtmp', 'microphone'].includes(onAir.sourceMode);
@@ -61,6 +75,8 @@ export async function startMediaRelay(mediaPath: string, logger: FastifyBaseLogg
 }
 
 export async function stopMediaRelay(mediaPath: string): Promise<void> {
+  // A stop can arrive before the child process fires its spawn event.
+  await starting.get(mediaPath)?.catch(() => {});
   const child = relays.get(mediaPath);
   if (!child) return;
   relays.delete(mediaPath);
@@ -81,5 +97,5 @@ export async function stopMediaRelay(mediaPath: string): Promise<void> {
 }
 
 export async function stopAllMediaRelays(): Promise<void> {
-  await Promise.all([...relays.keys()].map((mediaPath) => stopMediaRelay(mediaPath)));
+  await Promise.all([...new Set([...starting.keys(), ...relays.keys()])].map((mediaPath) => stopMediaRelay(mediaPath)));
 }

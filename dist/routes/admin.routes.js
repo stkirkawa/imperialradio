@@ -21,6 +21,7 @@ const updateDjBody = z.object({
     password: z.string().min(12).max(128).optional()
 }).refine((body) => Object.keys(body).length > 0);
 const radioServiceId = z.enum(['liquidsoap', 'icecast', 'mediamtx']);
+const queueTrackBody = z.object({ file: z.string().min(1).max(255) });
 function isUniqueConstraint(error) {
     return typeof error === 'object' && error !== null && 'code' in error &&
         String(error.code).includes('SQLITE_CONSTRAINT');
@@ -93,24 +94,24 @@ export async function adminRoutes(app) {
         });
     });
     app.post('/api/admin/queue/next', { preHandler: basicAuth }, async (req, reply) => {
-        const body = req.body || {};
-        if (!body.file)
+        const parsed = queueTrackBody.safeParse(req.body);
+        if (!parsed.success)
             return reply.code(400).send({ ok: false, error: 'file_required' });
-        await pushMusicToLiquidsoap('next', body.file);
+        await pushMusicToLiquidsoap('next', parsed.data.file);
         return { ok: true };
     });
     app.post('/api/admin/queue/add', { preHandler: basicAuth }, async (req, reply) => {
-        const body = req.body || {};
-        if (!body.file)
+        const parsed = queueTrackBody.safeParse(req.body);
+        if (!parsed.success)
             return reply.code(400).send({ ok: false, error: 'file_required' });
-        await pushMusicToLiquidsoap('queue', body.file);
+        await pushMusicToLiquidsoap('queue', parsed.data.file);
         return { ok: true };
     });
     app.delete('/api/admin/music', { preHandler: basicAuth }, async (req, reply) => {
-        const query = req.query;
-        const file = query.file || '';
-        if (!file)
+        const parsed = queueTrackBody.safeParse(req.query);
+        if (!parsed.success)
             return reply.code(400).send({ ok: false, error: 'file_required' });
+        const file = parsed.data.file;
         const targetPath = safeMusicPath(file);
         await fsp.unlink(targetPath);
         return { ok: true };

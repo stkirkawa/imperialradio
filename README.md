@@ -1,4 +1,4 @@
-﻿# IMPERIAL RADIO (Fastify + TypeScript)
+# IMPERIAL RADIO (Fastify + TypeScript)
 
 Минимальное веб‑приложение для онлайн‑радио: сайт с плеером, прокси аудио‑потока, “Сейчас играет”, админ‑загрузка. Интерфейс RU, тёмная тема.
 
@@ -25,7 +25,7 @@ npm start
 | `MUSIC_DIR`, `JINGLES_DIR`, `TMP_DIR`, `DATA_DIR` | Каталоги музыки, джинглов, временных файлов и базы SQLite. |
 | `ADMIN_USER`, `ADMIN_PASS` | Учётная запись главного администратора при первом старте пустой базы. |
 | `LIQUIDSOAP_HOST`, `LIQUIDSOAP_PORT` | Локальный telnet-интерфейс Liquidsoap. |
-| `LIVE_INGRESS_PASSWORD` | Общий секрет между приложением, FFmpeg и входами Harbor Liquidsoap; задайте тот же секрет в конфигурации Liquidsoap. |
+| `LIVE_INGRESS_PASSWORD` | Общий секрет между приложением, FFmpeg и входами Harbor Liquidsoap. Передайте его службе Liquidsoap через защищённый EnvironmentFile. |
 | `BROADCAST_RTMP_BASE_URL`, `BROADCAST_WHIP_BASE_URL`, `BROADCAST_ICECAST_BASE_URL` | Публичные адреса входов для OBS, браузерного микрофона и BUTT. |
 | `ICECAST_INGEST_HOST`, `ICECAST_INGEST_PORT` | Внутренний HTTP listener приложения; по умолчанию `127.0.0.1:8006`. |
 | `ICECAST_RAW_INGEST_HOST`, `ICECAST_RAW_INGEST_PORT` | TCP-мост Icecast SOURCE для BUTT; по умолчанию локальный `127.0.0.1:8007`. |
@@ -40,7 +40,7 @@ curl http://127.0.0.1:3000/api/nowplaying
 
 ## Аудиоэфир
 
-`npm start` запускает веб-приложение и его DJ-входы, но не сами службы аудиоэфира. Для полного радио отдельно установите Icecast2, Liquidsoap 2.x, FFmpeg и MediaMTX; веб-приложение не устанавливает и не запускает их автоматически. `liquidsoap.liq` использует встроенный MP3-кодер Liquidsoap. На Linux пути плейлистов должны совпадать с `MUSIC_DIR` и `JINGLES_DIR` (по умолчанию `/radio/music` и `/radio/jingles`); каталоги музыки и `DATA_DIR` должны быть доступны пользователю службы.
+`npm start` запускает веб-приложение и его DJ-входы, но не сами службы аудиоэфира. Для полного радио отдельно установите Icecast2, Liquidsoap 2.x, FFmpeg и MediaMTX; веб-приложение не устанавливает и не запускает их автоматически. `liquidsoap.liq` использует встроенный MP3-кодер Liquidsoap с битрейтом 128 Кбит/с. Секреты не зашиваются в `.liq`: передайте их процессу Liquidsoap через окружение. На Linux пути плейлистов должны совпадать с `MUSIC_DIR` и `JINGLES_DIR` (по умолчанию `/radio/music` и `/radio/jingles`); каталоги музыки и `DATA_DIR` должны быть доступны пользователю службы.
 
 | Порт по умолчанию | Служба | Доступ |
 |---|---|---|
@@ -63,14 +63,14 @@ curl http://127.0.0.1:3000/api/nowplaying
 
 Режимы выхода DJ в эфир: личный плейлист/очередь, OBS по RTMP и BUTT по Icecast SOURCE. Во время плейлистного эфира DJ может отдельно включать микрофон браузера по WHIP/WebRTC: музыка продолжает играть и становится тише примерно на 3 dB; ползунок в студии регулирует общую громкость потока. Для внешних источников нужны FFmpeg и MediaMTX; пример конфигурации MediaMTX находится в `mediamtx.yml`. MediaMTX и Liquidsoap подключаются к локальному приложению, а уникальные путь и временный пароль выдаются DJ при каждом эфире. Liquidsoap автоматически переключается на AutoDJ при завершении внешнего источника; публичный веб-плеер повторно подключается после сетевого сбоя, если слушатель уже нажал «Играть» и сам не поставил его на паузу. Для работы в фоне нужно сначала разрешить воспроизведение нажатием кнопки: браузеры запрещают автозапуск звука.
 
-Главный администратор может просматривать статус и отдельно перезапускать AutoDJ (Liquidsoap), Icecast и MediaMTX в панели `/admin`. На Linux установите helper `deploy/imperialradio-service-control.py` в `/usr/local/libexec/` с владельцем `root:root` и правами `0755`, а socket и template unit из `deploy/` — в `/etc/systemd/system/` с владельцем `root:root` и правами `0644`. Затем выполните `systemctl daemon-reload` и `systemctl enable --now imperialradio-service-control.socket`. Socket доступен только пользователю приложения; root helper принимает лишь ID трёх разрешённых служб и выполняет фиксированные команды без shell. Это сохраняет `NoNewPrivileges` для приложения. Перезапуск Icecast прерывает подключения слушателей, а MediaMTX — публикации OBS/микрофона.
+Главный администратор может просматривать статус и отдельно перезапускать AutoDJ (Liquidsoap), Icecast и MediaMTX в панели `/admin`. На Linux установите helper `deploy/imperialradio-service-control.py` в `/usr/local/libexec/` с владельцем `root:root` и правами `0755`, а socket и service unit из `deploy/` — в `/etc/systemd/system/` с владельцем `root:root` и правами `0644`. Затем выполните `systemctl daemon-reload` и `systemctl enable --now imperialradio-service-control.socket`. Socket доступен только пользователю приложения; root helper принимает лишь ID трёх разрешённых служб и выполняет фиксированные команды без shell. Это сохраняет `NoNewPrivileges` для приложения. Перезапуск Icecast прерывает подключения слушателей, а MediaMTX — публикации OBS/микрофона.
 
 Панели используют адаптивную боковую навигацию и отдельные защищённые страницы: `/admin/djs`, `/admin/music`, `/admin/uploads`, `/admin/services` и `/dj/studio`, `/dj/queue`, `/dj/playlists`, `/dj/library`, `/dj/upload`. Библиотека и загрузка музыки в DJ-панели находятся на разных страницах. Для перехода между страницами проверяется роль пользователя; неизвестные разделы возвращают `404`.
 
 ### Настройка аудиовхода DJ
 
-1. В `.env` задайте случайный `LIVE_INGRESS_PASSWORD` и укажите **то же значение** как пароль обоих входов `input.harbor` в `liquidsoap.liq`. Это внутренний пароль, не пароль DJ. Не используйте значение по умолчанию в production.
-2. Запустите Liquidsoap с обновлёнными входами Harbor `127.0.0.1:8005/dj-live` и `127.0.0.1:8005/dj-mic`; приложение использует второй mount для наложения голоса на плейлист. В Liquidsoap 2.0.2 Harbor может слушать на всех интерфейсах, поэтому обязательно запретите входящие подключения к TCP-порту `8005` с внешних интерфейсов. На VPS это обеспечивается отдельным nftables-правилом и systemd-службой `imperialradio-ingress-firewall`. Запустите FFmpeg и задайте `FFMPEG_PATH`, если бинарник не находится в `PATH`.
+1. В `.env` приложения задайте случайный `LIVE_INGRESS_PASSWORD`. Передайте **то же значение** процессу Liquidsoap через защищённый файл окружения (пример ниже), плюс `ICECAST_SOURCE_PASSWORD` — пароль `<source-password>` из конфигурации Icecast2. Оба секрета обязательны. Никогда не записывайте их непосредственно в `liquidsoap.liq` и не оставляйте `CHANGE_ME_*`.
+2. Запустите Liquidsoap с внутренними входами Harbor `127.0.0.1:8005/dj-live` и `127.0.0.1:8005/dj-mic`. В скрипте принудительно установлено `harbor.bind_addr=127.0.0.1`. Убедитесь на вашем релизе Liquidsoap, что порт не доступен извне, и дополнительно оставьте правило firewall. Укажите `MUSIC_DIR`, `JINGLES_DIR` и при необходимости `LIQUIDSOAP_PORT` **в окружении службы Liquidsoap**. FFmpeg должен находиться по `FFMPEG_PATH`.
 3. Запустите приложение через `npm start`, затем MediaMTX из корня проекта с конфигурацией `mediamtx.yml` (например, `mediamtx mediamtx.yml`). Его callbacks должны иметь доступ к приложению на `127.0.0.1:3000`; `IMPERIALRADIO_APP_URL` можно задать для `scripts/mediaGatewayNotify.mjs`, если используется другой адрес. Медиа-пути RTSP/API должны оставаться локальными.
 4. Для OBS откройте RTMP порт MediaMTX (по умолчанию 1935) и задайте `BROADCAST_RTMP_BASE_URL`. В OBS должен быть включён аудиоканал. Для браузерного микрофона настройте HTTPS reverse proxy для WHIP на порт 8889, задайте публичный `BROADCAST_WHIP_BASE_URL`, укажите публичный адрес в `webrtcAdditionalHosts` и откройте UDP порт 8189. Микрофон доступен браузеру только через HTTPS или localhost.
 5. Для удалённого BUTT задайте `ICECAST_RAW_INGEST_HOST=0.0.0.0`, выберите свободный публичный TCP-порт в `ICECAST_RAW_INGEST_PORT` и установите `BROADCAST_ICECAST_BASE_URL` на `http://<адрес-сервера>:<порт>`. Откройте только этот порт в firewall. Raw TCP-мост принимает Icecast source-протокол и преобразует его для внутреннего HTTP listener приложения; не проксируйте его через HTTP location Nginx. Вход рассчитан на непрерывный запрос и не ограничивается стандартным 300-секундным таймаутом Node.js. Внешний вход работает без TLS: имя пользователя и временный пароль передаются открыто. Используйте защищённую TCP/TLS-терминацию или VPN; если это невозможно и используется открытый порт, создайте отдельный случайный пароль для каждого эфира, подключайтесь только из доверенной сети и отзывайте реквизиты сразу после эфира. В BUTT выберите сервер Icecast, MP3, имя пользователя `source`; полный путь mount и одноразовый пароль скопируйте из студии. Источник нормализуется через FFmpeg в MP3, поэтому `FFMPEG_PATH` должен указывать на установленный FFmpeg. Не выставляйте наружу внутренний HTTP listener (`ICECAST_INGEST_HOST=127.0.0.1`, `ICECAST_INGEST_PORT=8006`) или Harbor `8005`.
@@ -171,3 +171,30 @@ WantedBy=multi-user.target
 
 ### Контакты
 Контакт для обращений: `kirk@kirkawa.ru`
+
+## Безопасное обновление Liquidsoap и служб
+
+При обновлении существующего сервера **не заменяйте** рабочие секреты/пути шаблонными значениями. Конфигурация `liquidsoap.liq` теперь читает `LIVE_INGRESS_PASSWORD`, `ICECAST_SOURCE_PASSWORD`, `MUSIC_DIR`, `JINGLES_DIR` и `LIQUIDSOAP_PORT` из окружения **своего процесса**. Файл `.env` загружается только Node-приложением; он **не подключается автоматически** к Liquidsoap. Для systemd создайте защищённый `/etc/imperialradio/liquidsoap.env` с такими ключами (без кавычек и заглушек):
+
+```ini
+LIVE_INGRESS_PASSWORD=ваш_секрет_из_окружения_Node
+ICECAST_SOURCE_PASSWORD=текущий_пароль_source_в_Icecast2
+MUSIC_DIR=/radio/music
+JINGLES_DIR=/radio/jingles
+LIQUIDSOAP_PORT=1234
+```
+
+Файл должен принадлежать `root:root` и иметь права `0600`. Подключите к `imperialradio-liquidsoap.service` с помощью systemd drop-in:
+
+```ini
+[Service]
+EnvironmentFile=/etc/imperialradio/liquidsoap.env
+```
+
+После этого `systemctl daemon-reload`, предварительная проверка `liquidsoap --check /путь/к/liquidsoap.liq` на **фактической версии Liquidsoap** с загруженным окружением и только затем `systemctl restart imperialradio-liquidsoap.service`. Подключайте службы в согласованном порядке, чтобы не прерывать эфир дольше необходимого. Версию Liquidsoap 2.0.x не следует оставлять на общедоступном сервере без дополнительных мер защиты; скрипт использует прежний интерфейс 2.x (для 2.4+ может потребоваться миграция синтаксиса).
+
+Если используется административная кнопка перезапуска служб, теперь в `deploy/` находятся ранее отсутствовавшие `imperialradio-service-control.py`, `.socket` и `.service`. Установите Python helper как `/usr/local/libexec/imperialradio-service-control.py` с `root:root 0755`, systemd units в `/etc/systemd/system/` как `root:root 0644`. Проверьте реальное имя пользователя приложения: если не `imperialradio`, измените `SocketUser`, `SocketGroup` в `.socket` и `IMPERIALRADIO_APP_USER` в `.service`. Никогда не давайте веб-приложению право редактировать эти root-owned файлы. Включите только socket: `systemctl daemon-reload && systemctl enable --now imperialradio-service-control.socket`. Helper разрешает только три фиксированных systemd unit и не принимает shell-команды.
+
+### Ограничения проверки безопасности зависимостей
+
+В исходном `package-lock.json` закреплены `fastify@4.29.1`, `undici@6.23.0`, `@fastify/busboy@3.2.0`, `vitest@2.1.9`; для них опубликованы security advisories, поэтому стек нельзя считать полностью исправленным до обновления с повторным тестированием. Перед production-релизом на машине с доступом к npm сделайте `npm ci && npm audit --omit=dev`, отдельно планируйте совместимый переход Fastify 4 → 5 вместе с `@fastify/static` и `@fastify/multipart`, обновите transitive `@fastify/busboy` как минимум до `3.2.4` и `undici` в ветке 6.x как минимум до `6.29.1`, затем обновите lock-файл **через npm**, не вручную. Выполните `npm run build && npm test`. Код содержит дополнительную защиту от multipart boundary длиной свыше 70 символов, но она не заменяет исправленные версии зависимостей.

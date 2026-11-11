@@ -1,20 +1,36 @@
-# Minimal AutoDJ for Imperial Radio (FFmpeg encoder)
-# Requires: ffmpeg in PATH
+# Imperial Radio AutoDJ: playlists, queued requests, DJ live and microphone mix.
+# Compatible with the legacy Liquidsoap 2.x scripting interface used by this project.
+# The Liquidsoap service must receive these environment variables, not just Node.js.
+# Set LIVE_INGRESS_PASSWORD and ICECAST_SOURCE_PASSWORD to strong independent secrets.
 
-# Control server (telnet)
+def env_or(name, default_value) =
+  value = getenv(name)
+  if value == "" then default_value else value end
+end
+
+live_ingress_password = getenv("LIVE_INGRESS_PASSWORD")
+icecast_source_password = getenv("ICECAST_SOURCE_PASSWORD")
+if live_ingress_password == "" or live_ingress_password == "CHANGE_ME_LOCAL_INGRESS_PASSWORD" then
+  failwith("Set LIVE_INGRESS_PASSWORD for the Liquidsoap service")
+end
+if icecast_source_password == "" or icecast_source_password == "CHANGE_ME_ICECAST_SOURCE_PASSWORD" then
+  failwith("Set ICECAST_SOURCE_PASSWORD for the Liquidsoap service")
+end
+
+# Never expose the unauthenticated control port or the private Harbor inputs.
 set("server.telnet", true)
 set("server.telnet.bind_addr", "127.0.0.1")
-set("server.telnet.port", 1234)
+set("server.telnet.port", int_of_string(env_or("LIQUIDSOAP_PORT", "1234")))
+set("harbor.bind_addr", "127.0.0.1")
 
 # Music library
-music = playlist(id="music", mode="random", reload=10, reload_mode="seconds", "C:/radio/music")
+music = playlist(id="music", mode="random", reload=10, reload_mode="seconds", env_or("MUSIC_DIR", "/radio/music"))
 
 # Jingles library (optional)
-jingles = playlist(id="jingles", mode="random", reload=30, reload_mode="seconds", "C:/radio/jingles")
+jingles = playlist(id="jingles", mode="random", reload=30, reload_mode="seconds", env_or("JINGLES_DIR", "/radio/jingles"))
 
-# Make sources safe (avoid fallible error when dirs are empty)
-music = mksafe(music)
-jingles = mksafe(jingles)
+# Keep these sources fallible: mksafe(jingles) inserts silence whenever the
+# optional jingle folder is empty. A final fallback below keeps output alive.
 
 # Request queues (for admin actions)
 queue_next = request.queue(id="next", interactive=true)
@@ -118,7 +134,7 @@ dj_live = input.harbor(
   port=8005,
   on_connect=fun (_) -> dj_connected := true,
   on_disconnect=fun () -> dj_connected := false,
-  password="CHANGE_ME_LOCAL_INGRESS_PASSWORD"
+  password=live_ingress_password
 )
 
 dj_mic = input.harbor(
@@ -127,9 +143,9 @@ dj_mic = input.harbor(
   port=8005,
   on_connect=fun (_) -> dj_mic_connected := true,
   on_disconnect=fun () -> dj_mic_connected := false,
-  password="CHANGE_ME_LOCAL_INGRESS_PASSWORD"
+  password=live_ingress_password
 )
-# Mix: 8 tracks music then 1 jingle on average
+# Mix: 8 tracks music then 1 jingle on average (when jingles are present)
 radio_main = rotate(weights=[8,1], [music, jingles])
 radio_queue = audio_to_stereo(fallback(track_sensitive=false, [dj_queue, queue_next, queue_main, radio_main]))
 dj_live_audio = audio_to_stereo(dj_live)
@@ -188,11 +204,11 @@ radio = audio_to_stereo(radio)
 
 # Icecast output (MP3)
 output.icecast(
-  %mp3,
+  %mp3(bitrate=128),
   host="127.0.0.1",
   port=8000,
   user="source",
-  password="skollirmq",
+  password=icecast_source_password,
   mount="/radio.mp3",
   name="IMPERIAL RADIO",
   description="AutoDJ",

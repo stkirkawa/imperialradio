@@ -11,6 +11,8 @@ coverage/
 *.sqlite-*
 *.liq-cache
 *.log
+*.runtime.liq
+secrets.liq
 
 # Local secrets
 .env

@@ -87,6 +87,7 @@ function makeId(): string {
 
 export class RadioStore {
   private readonly db: DatabaseSyncType;
+  private sessionsCreatedSinceCleanup = 0;
 
   constructor(databasePath = path.join(env.DATA_DIR, 'radio.sqlite')) {
     this.db = new DatabaseSync(databasePath);
@@ -212,6 +213,10 @@ export class RadioStore {
   }
 
   createSession(userId: string, ttlMs: number): string {
+    if (++this.sessionsCreatedSinceCleanup >= 100) {
+      this.db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(Date.now());
+      this.sessionsCreatedSinceCleanup = 0;
+    }
     const token = randomBytes(32).toString('base64url');
     this.db.prepare('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)')
       .run(hashToken(token), userId, Date.now() + ttlMs);
@@ -307,7 +312,16 @@ export class RadioStore {
   }
 
   getPlaylist(userId: string, playlistId: string): Playlist | null {
-    return this.listPlaylists(userId).find((playlist) => playlist.id === playlistId) ?? null;
+    const row = this.db.prepare(`
+      SELECT id, name, created_at, updated_at FROM playlists
+      WHERE user_id = ? AND id = ?
+    `).get(userId, playlistId) as { id: string; name: string; created_at: string; updated_at: string } | undefined;
+    if (!row) return null;
+    const tracks = this.db.prepare(`
+      SELECT filename FROM playlist_tracks WHERE playlist_id = ? ORDER BY position
+    `).all(playlistId) as Array<{ filename: string }>;
+    return { id: row.id, name: row.name, tracks: tracks.map((item) => item.filename),
+      createdAt: row.created_at, updatedAt: row.updated_at };
   }
 
   createPlaylist(userId: string, name: string): Playlist {
@@ -586,4 +600,11 @@ export async function initializeRadioStore(): Promise<{ store: RadioStore; previ
 export function getRadioStore(): RadioStore {
   if (!activeStore) throw new Error('Radio store has not been initialized');
   return activeStore;
+}
+
+/** Release the SQLite connection after all radio-related work has stopped. */
+export function closeRadioStore(): void {
+  if (!activeStore) return;
+  activeStore.close();
+  activeStore = null;
 }

@@ -1,0 +1,18 @@
+[Unit]
+Description=Imperial Radio restricted service-control helper
+Requires=imperialradio-service-control.socket
+
+[Service]
+Type=simple
+User=root
+Group=root
+Environment=IMPERIALRADIO_APP_USER=imperialradio
+ExecStart=/usr/bin/python3 /usr/local/libexec/imperialradio-service-control.py
+NoNewPrivileges=yes
+ProtectHome=yes
+ProtectSystem=strict
+PrivateTmp=yes
+RestrictAddressFamilies=AF_UNIX
+SystemCallArchitectures=native
+Restart=on-failure
+RestartSec=2
