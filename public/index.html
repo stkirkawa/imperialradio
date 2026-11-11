@@ -7,7 +7,7 @@
   <title>SANTA MARIA RADIO</title>
   <link rel="icon" type="image/png" href="/assets/logo.png" />
   <link rel="stylesheet" href="/assets/styles.css" />
-  <link rel="stylesheet" href="/assets/public-theme.css?v=20261110-header" />
+  <link rel="stylesheet" href="/assets/public-theme.css?v=20261112-volume-percent" />
 </head>
 <body>
   <div class="topbar">
@@ -37,7 +37,7 @@
           <div class="nowbox">
             <div class="nowlabel">СЕЙЧАС ИГРАЕТ</div>
             <div class="nowrow">
-              <div class="art" aria-hidden="true"></div>
+              <img class="art nowplaying-art" src="/assets/logo.png" alt="Обложка текущего трека" />
               <div class="nowtext">
                 <div class="nowtitle" id="nowTitle">—</div>
                 <div class="nowmeta">
@@ -50,16 +50,20 @@
           </div>
 
           <div class="controls">
-            <button class="btn primary" id="playBtn">▶ ИГРАТЬ</button>
-            <button class="btn" id="muteBtn">БЕЗ ЗВУКА</button>
+            <button class="btn primary player-button" id="playBtn" type="button" aria-label="Играть" aria-pressed="false">
+              <span class="player-button-icon" id="playIcon" aria-hidden="true">▶</span>
+              <span id="playLabel">Играть</span>
+            </button>
+            <button class="btn utility-button" id="muteBtn" type="button">Без звука</button>
             <div class="slider">
-              <span>VOL</span>
+              <span class="volume-caption">VOL</span>
               <input id="vol" type="range" min="0" max="1" step="0.01" value="0.9" />
+              <output class="volume-value" id="volumeValue" for="vol" aria-live="polite">90%</output>
             </div>
-            <button class="btn" id="shareBtn">ПОДЕЛИТЬСЯ</button>
-            <button class="btn" id="copyBtn">КОПИРОВАТЬ ССЫЛКУ</button>
-            <button class="btn" id="copyTrackBtn">СКОПИРОВАТЬ НАЗВАНИЕ</button>
-            <button class="btn" id="suggestBtn">ПРЕДЛОЖИТЬ ТРЕК</button>
+            <button class="btn utility-button" id="shareBtn" type="button">Поделиться</button>
+            <button class="btn utility-button" id="copyBtn" type="button">Ссылка</button>
+            <button class="btn utility-button" id="copyTrackBtn" type="button">Название трека</button>
+            <button class="btn utility-button" id="suggestBtn" type="button">Предложить трек</button>
           </div>
 
 
@@ -101,8 +105,11 @@
 
     const player = document.getElementById("player");
     const playBtn = document.getElementById("playBtn");
+    const playIcon = document.getElementById("playIcon");
+    const playLabel = document.getElementById("playLabel");
     const muteBtn = document.getElementById("muteBtn");
     const vol = document.getElementById("vol");
+    const volumeValue = document.getElementById("volumeValue");
     const shareBtn = document.getElementById("shareBtn");
     const copyBtn = document.getElementById("copyBtn");
     const copyTrackBtn = document.getElementById("copyTrackBtn");
@@ -115,6 +122,12 @@
     document.getElementById("year").textContent = new Date().getFullYear();
     renderHistory();
     player.volume = Number(vol.value);
+    function updateVolumeValue() {
+      volumeValue.value = `${Math.round(Number(vol.value) * 100)}%`;
+      volumeValue.textContent = volumeValue.value;
+      volumeValue.classList.toggle("is-muted", Number(vol.value) === 0 || player.muted);
+    }
+    updateVolumeValue();
     let playbackRequested = false;
     let reconnectTimer = null;
     let stalledTimer = null;
@@ -133,6 +146,16 @@
       statusText.textContent = s.t;
       statusDot.style.background = s.dot;
       statusDot.style.boxShadow = `0 0 0 6px ${s.glow}`;
+    }
+
+    function setPlayButton(state) {
+      const playing = state === "playing";
+      playBtn.classList.toggle("is-playing", playing);
+      playBtn.classList.toggle("is-loading", state === "loading");
+      playBtn.setAttribute("aria-label", playing ? "Пауза" : "Играть");
+      playBtn.setAttribute("aria-pressed", String(playing));
+      playIcon.textContent = playing ? "Ⅱ" : state === "loading" ? "…" : "▶";
+      playLabel.textContent = playing ? "Пауза" : state === "loading" ? "Подключение" : "Играть";
     }
 
     function formatTime(d) {
@@ -156,9 +179,12 @@
         item.className = "item";
         const line = document.createElement("div");
         line.className = "tline";
-        const art = document.createElement("div");
+        const art = document.createElement("img");
         art.className = "art";
+        art.src = "/assets/logo.png";
+        art.alt = "";
         art.setAttribute("aria-hidden", "true");
+        art.loading = "lazy";
         const label = document.createElement("strong");
         label.textContent = title;
         const timestamp = document.createElement("span");
@@ -227,12 +253,12 @@
       playbackRequested = true;
       reconnectAttempts = 0;
       clearReconnectTimers();
-      playBtn.textContent = "⏸ ПАУЗА";
       setStatus("loading");
+      setPlayButton("loading");
       try {
         setStreamUrl();
         await player.play();
-        playBtn.textContent = "⏸ ПАУЗА";
+        setPlayButton("playing");
         setStatus("playing");
       } catch {
         scheduleReconnect();
@@ -243,7 +269,7 @@
       playbackRequested = false;
       clearReconnectTimers();
       player.pause();
-      playBtn.textContent = "▶ ИГРАТЬ";
+      setPlayButton("paused");
       setStatus("paused");
     }
 
@@ -254,34 +280,40 @@
         player.muted = true;
         player.volume = 0;
         vol.value = "0";
-        muteBtn.textContent = "БЕЗ ЗВУКА";
+        updateVolumeValue();
+        muteBtn.textContent = "Без звука";
       } else {
         player.muted = false;
         player.volume = lastVolume || 0.9;
         vol.value = String(player.volume);
-        muteBtn.textContent = "СО ЗВУКОМ";
+        updateVolumeValue();
+        muteBtn.textContent = "Со звуком";
       }
     });
         vol.addEventListener("input", () => {
       player.volume = Number(vol.value);
+      updateVolumeValue();
       if (player.volume > 0) {
         player.muted = false;
-        muteBtn.textContent = "СО ЗВУКОМ";
+        muteBtn.textContent = "Со звуком";
         lastVolume = player.volume;
       } else {
         player.muted = true;
-        muteBtn.textContent = "БЕЗ ЗВУКА";
+        muteBtn.textContent = "Без звука";
       }
     });
 
     player.addEventListener("playing", () => {
       clearReconnectTimers();
       reconnectAttempts = 0;
-      playBtn.textContent = "⏸ ПАУЗА";
+      setPlayButton("playing");
       setStatus("playing");
     });
     player.addEventListener("pause", () => {
-      if (!playbackRequested && !player.ended) setStatus("paused");
+      if (!playbackRequested && !player.ended) {
+        setPlayButton("paused");
+        setStatus("paused");
+      }
     });
     player.addEventListener("waiting", () => {
       if (!playbackRequested) return;

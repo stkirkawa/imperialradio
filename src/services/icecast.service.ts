@@ -1,5 +1,6 @@
 ﻿import { request } from 'undici';
 import { env } from '../config/env.js';
+import { decodeHtmlEntities } from '../utils/decodeHtmlEntities.js';
 
 export type NowPlaying = {
   station: string;
@@ -57,7 +58,7 @@ function resolveTitle(source?: IcecastSource | null): string {
     source.playlist?.trackList?.[0]?.title
   ];
   for (const c of candidates) {
-    if (typeof c === 'string' && c.trim()) return c.trim();
+    if (typeof c === 'string' && c.trim()) return decodeHtmlEntities(c.trim());
   }
   const combo = [source.artist, source.title].filter(Boolean).join(' — ');
   return combo.trim() || '—';

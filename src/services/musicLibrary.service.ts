@@ -5,6 +5,7 @@ import { env } from '../config/env.js';
 import { sendLiquidsoapCommand } from './liquidsoap.service.js';
 import { fetchNowPlaying } from './icecast.service.js';
 import { getRadioStore } from './radioStore.service.js';
+import { decodeHtmlEntities } from '../utils/decodeHtmlEntities.js';
 import type { FastifyBaseLogger } from 'fastify';
 
 export const ALLOWED_MUSIC_EXTS = ['.mp3', '.wav', '.ogg', '.flac'];
@@ -21,7 +22,7 @@ export function displayTitleFromFilename(filename: string): string {
   const ext = path.extname(filename);
   const base = path.basename(filename, ext).replace(TS_PREFIX, '');
   const pretty = base.replace(/_+/g, ' ').replace(/\s+-\s+/g, ' - ').trim();
-  return pretty || filename;
+  return decodeHtmlEntities(pretty || filename);
 }
 
 export function safeMusicPath(file: string): string {

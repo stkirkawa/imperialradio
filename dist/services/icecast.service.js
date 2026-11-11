@@ -1,5 +1,6 @@
 import { request } from 'undici';
 import { env } from '../config/env.js';
+import { decodeHtmlEntities } from '../utils/decodeHtmlEntities.js';
 function getAuthHeader() {
     if (!env.ICECAST_STATUS_USER || !env.ICECAST_STATUS_PASS)
         return undefined;
@@ -30,7 +31,7 @@ function resolveTitle(source) {
     ];
     for (const c of candidates) {
         if (typeof c === 'string' && c.trim())
-            return c.trim();
+            return decodeHtmlEntities(c.trim());
     }
     const combo = [source.artist, source.title].filter(Boolean).join(' — ');
     return combo.trim() || '—';
