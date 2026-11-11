@@ -113,7 +113,7 @@
   <script>
     const NOWPLAYING_URL = "/api/nowplaying";
     const POLL_MS = 7000;
-    const HISTORY_MAX = 12;
+    const HISTORY_MAX = 13;
     const STREAM_URL = "/stream";
 
     const nowTitleEl = document.getElementById("nowTitle");
@@ -137,7 +137,8 @@
     const toastEl = document.getElementById("toast");
 
     const historyEl = document.getElementById("history");
-    const history = [];
+    let history = [];
+    let lastNowPlayingTitle = null;
 
     document.getElementById("year").textContent = new Date().getFullYear();
     renderHistory();
@@ -194,7 +195,7 @@
 
     function renderHistory() {
       const fragment = document.createDocumentFragment();
-      for (const { title, time } of history) {
+      for (const { title, playedAt } of history) {
         const item = document.createElement("div");
         item.className = "item";
         const line = document.createElement("div");
@@ -208,7 +209,7 @@
         const label = document.createElement("strong");
         label.textContent = title;
         const timestamp = document.createElement("span");
-        timestamp.textContent = time;
+        timestamp.textContent = formatTime(new Date(playedAt));
         line.append(art, label);
         item.append(line, timestamp);
         fragment.append(item);
@@ -216,12 +217,20 @@
       historyEl.replaceChildren(fragment);
     }
 
-    function pushHistory(title) {
-      const time = formatTime(new Date());
-      if (history[0]?.title === title) return;
-      history.unshift({ title, time });
-      if (history.length > HISTORY_MAX) history.pop();
+    function updateHistory(items) {
+      if (!Array.isArray(items)) return;
+      history = items
+        .filter((item) => item && typeof item.title === "string" && typeof item.playedAt === "string")
+        .slice(0, HISTORY_MAX);
       renderHistory();
+    }
+
+    async function refreshHistory() {
+      try {
+        const response = await fetch("/api/history", { cache: "no-store" });
+        const data = await response.json();
+        updateHistory(data.history);
+      } catch {}
     }
 
     async function refreshNowPlaying() {
@@ -233,7 +242,10 @@
         listenersEl.textContent = (j.listeners ?? 0);
         onAirLabelEl.textContent = j.onAirLabel || "В эфире";
         updatedEl.textContent = formatTime(new Date());
-        pushHistory(title);
+        if (title !== lastNowPlayingTitle) {
+          lastNowPlayingTitle = title;
+          await refreshHistory();
+        }
       } catch {}
     }
 
@@ -426,6 +438,7 @@
     });
 
     setStatus("paused");
+    refreshHistory();
     refreshNowPlaying();
     setInterval(refreshNowPlaying, POLL_MS);
   </script>

@@ -16,7 +16,7 @@ function fallbackNowPlaying(): NowPlaying {
   };
 }
 
-function addOnAirLabel(data: NowPlaying): NowPlaying {
+function addOnAirLabel(data: NowPlaying) {
   const onAir = getRadioStore().getOnAir();
   return {
     ...data,
@@ -25,12 +25,15 @@ function addOnAirLabel(data: NowPlaying): NowPlaying {
 }
 
 export async function nowPlayingRoutes(app: FastifyInstance) {
+  app.get('/api/history', async () => ({ history: getRadioStore().listTrackHistory() }));
+
   app.get('/api/nowplaying', async (req, reply) => {
     const cached = cache.get();
     if (cached) return addOnAirLabel(cached);
 
     try {
       const data = await fetchNowPlaying();
+      getRadioStore().recordPlayedTrack(data.title);
       cache.set(data, env.NOWPLAYING_CACHE_MS);
       return addOnAirLabel(data);
     } catch (err) {

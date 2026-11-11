@@ -177,6 +177,13 @@ export class RadioStore {
       );
       CREATE INDEX IF NOT EXISTS track_suggestions_status_created ON track_suggestions(status, created_at DESC);
 
+      CREATE TABLE IF NOT EXISTS track_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        played_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS track_history_played_at ON track_history(played_at DESC, id DESC);
+
       INSERT OR IGNORE INTO radio_state (id) VALUES (1);
     `);
 
@@ -647,6 +654,23 @@ export class RadioStore {
       UPDATE track_suggestions SET status = ?, filename = COALESCE(?, filename)
       WHERE id = ? AND status = 'pending'
     `).run(status, filename ?? null, id).changes === 1;
+  }
+
+  recordPlayedTrack(title: string, playedAt = new Date().toISOString()): void {
+    const normalizedTitle = title.trim();
+    if (!normalizedTitle || normalizedTitle === '—') return;
+    const latest = this.db.prepare('SELECT title FROM track_history ORDER BY played_at DESC, id DESC LIMIT 1').get() as { title: string } | undefined;
+    if (latest?.title === normalizedTitle) return;
+    this.db.prepare('INSERT INTO track_history (title, played_at) VALUES (?, ?)').run(normalizedTitle, playedAt);
+    this.db.exec(`
+      DELETE FROM track_history
+      WHERE id NOT IN (SELECT id FROM track_history ORDER BY played_at DESC, id DESC LIMIT 13)
+    `);
+  }
+
+  listTrackHistory(): Array<{ title: string; playedAt: string }> {
+    const rows = this.db.prepare('SELECT title, played_at FROM track_history ORDER BY played_at DESC, id DESC LIMIT 13').all() as Array<{ title: string; played_at: string }>;
+    return rows.map((row) => ({ title: row.title, playedAt: row.played_at }));
   }
 }
 
